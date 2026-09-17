@@ -398,14 +398,13 @@ const INITIAL_RESERVATIONS: RestaurantReservation[] = [
 ];
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Current user session (Defaults to Chez Alpha Restaurant Owner for immediate demo usability)
+  // No authenticated user is assumed on a fresh browser.
   const [currentUser, setCurrentUser] = useState<Profile | null>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.USER) || localStorage.getItem('restoqr_user_v3');
-      if (saved) return JSON.parse(saved);
-      return INITIAL_PROFILES[2]; // Chez Alpha Restaurant Owner
+      return saved ? JSON.parse(saved) : null;
     } catch {
-      return INITIAL_PROFILES[2];
+      return null;
     }
   });
 
