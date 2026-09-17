@@ -46,8 +46,11 @@ export const PublicMenuPage: React.FC<PublicMenuPageProps> = ({ slug, restaurant
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Table & Customer Details Form
-  const [tableNumber, setTableNumber] = useState<string>('5');
+  // Table & Customer Details Form: a table QR identifies the client's table.
+  const tableFromQr = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('table')
+    : null;
+  const [tableNumber, setTableNumber] = useState<string>(tableFromQr?.trim() || '');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerNote, setCustomerNote] = useState('');

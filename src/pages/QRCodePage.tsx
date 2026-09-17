@@ -31,7 +31,10 @@ export const QRCodePage: React.FC<QRCodePageProps> = ({ navigate }) => {
 
   // Determine origin URL
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const menuPath = `/r/${activeRestaurant.slug}`;
+  const tableQuery = selectedTable !== 'all'
+    ? `?table=${encodeURIComponent(selectedTable.replace(/^Table\\s+/i, ''))}`
+    : '';
+  const menuPath = `/r/${activeRestaurant.slug}${tableQuery}`;
   const fullMenuUrl = `${origin}${menuPath}`;
 
   const copyMenuUrl = () => {
