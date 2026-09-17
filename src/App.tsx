@@ -55,6 +55,23 @@ function AppContent({
 
   // Strict Role-Based Access Control (RBAC) Guard
   useEffect(() => {
+    const restaurantPaths = currentPath === '/dashboard' ||
+      currentPath === '/dashboard/' ||
+      currentPath.startsWith('/dashboard/') ||
+      currentPath === '/restaurant/dashboard' ||
+      currentPath === '/restaurant/staff';
+
+    if (restaurantPaths && !currentUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (restaurantPaths && currentUser && !currentUser.restaurant_id) {
+      showToast('Créez d’abord votre restaurant pour accéder au dashboard.', 'error');
+      navigate('/register');
+      return;
+    }
+
     if (!currentUser) return;
 
     // Strict staff separation
@@ -273,11 +290,12 @@ function AppContent({
   };
 
   const isOwnerPath = currentPath.startsWith('/owner');
+  const isPublicAuthPath = currentPath === '/register' || currentPath === '/register/' || currentPath === '/login' || currentPath === '/login/';
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900 flex flex-col selection:bg-orange-500 selection:text-white">
       {(currentPath === '/' || currentPath === '') && <LandingHeader navigate={navigate} />}
-      {currentPath !== '/' && currentPath !== '' && !isOwnerPath && <Navbar currentPath={currentPath} navigate={navigate} />}
+      {currentPath !== '/' && currentPath !== '' && !isOwnerPath && !isPublicAuthPath && <Navbar currentPath={currentPath} navigate={navigate} />}
       
       <main className="flex-1">
         {renderRoute()}
