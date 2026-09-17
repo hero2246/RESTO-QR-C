@@ -13,6 +13,7 @@ import {
   Power, 
   AlertTriangle,
   Mail,
+  MessageCircle,
   Phone,
   Calendar,
   KeyRound,
@@ -308,6 +309,26 @@ export const OwnerEmployeesPage: React.FC<OwnerEmployeesPageProps> = ({ navigate
     }
   };
 
+  const getInvitationMessage = (emp: SaasEmployee) => {
+    const loginUrl = `${window.location.origin}/owner/login`;
+    return `Invitation RESTO QR\n\nBonjour ${emp.name},\n\nVotre accès gestionnaire est prêt.\nEmail : ${emp.email}\nClé d’accès secrète : ${emp.access_pin || 'à définir'}\nLien de connexion : ${loginUrl}\n\nNe partagez jamais cette clé.`;
+  };
+
+  const sendByEmail = (emp: SaasEmployee) => {
+    window.location.href = `mailto:${encodeURIComponent(emp.email)}?subject=${encodeURIComponent('Votre invitation RESTO QR')}&body=${encodeURIComponent(getInvitationMessage(emp))}`;
+    showToast('Votre logiciel email a été ouvert avec l’invitation.', 'success');
+  };
+
+  const sendByWhatsApp = (emp: SaasEmployee) => {
+    const phone = (emp.phone || '').replace(/[^0-9]/g, '');
+    if (!phone) {
+      showToast('Ajoutez un numéro de téléphone avant l’envoi WhatsApp.', 'error');
+      return;
+    }
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(getInvitationMessage(emp))}`, '_blank', 'noopener,noreferrer');
+    showToast('WhatsApp a été ouvert avec l’invitation.', 'success');
+  };
+
   // Filter employees
   const filteredEmployees = saasEmployees.filter(emp => {
     const matchQuery = 
@@ -534,6 +555,15 @@ export const OwnerEmployeesPage: React.FC<OwnerEmployeesPageProps> = ({ navigate
                       <span className="text-[10px] text-stone-400 block font-medium">Code PIN de secours</span>
                       <span className="text-stone-200 font-mono">{emp.access_pin || 'Non configuré'}</span>
                     </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button type="button" onClick={() => sendByEmail(emp)} className="flex items-center gap-1.5 rounded-xl border border-stone-700 bg-stone-950 px-3 py-2 text-[11px] font-bold text-stone-200 hover:border-orange-500 hover:text-white transition">
+                      <Mail className="w-3.5 h-3.5" /> Envoyer par email
+                    </button>
+                    <button type="button" onClick={() => sendByWhatsApp(emp)} className="flex items-center gap-1.5 rounded-xl border border-emerald-700/60 bg-emerald-950/30 px-3 py-2 text-[11px] font-bold text-emerald-300 hover:bg-emerald-950/60 transition">
+                      <MessageCircle className="w-3.5 h-3.5" /> Envoyer par WhatsApp
+                    </button>
                   </div>
 
                   {/* Permissions tags */}
