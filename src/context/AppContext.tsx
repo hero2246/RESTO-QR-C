@@ -3535,7 +3535,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return results;
   }, [restaurants]);
 
-  // Reset to Demo Data
+  // Reset demo data, including the Super Admin sales dashboard.
   const resetToDemoData = useCallback(() => {
     localStorage.clear();
     setCurrentUser(INITIAL_PROFILES[2]);
@@ -3549,7 +3549,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCategories(INITIAL_CATEGORIES);
     setProducts(INITIAL_PRODUCTS);
     setTables(INITIAL_TABLES);
-    setOrders(INITIAL_ORDERS);
+    setOrders([]);
     setAuditLogs(INITIAL_AUDIT_LOGS);
     showToast('Données de démonstration réinitialisées avec succès', 'info');
   }, [showToast]);
