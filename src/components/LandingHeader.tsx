@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { QrCode, LogIn } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -8,15 +8,36 @@ interface LandingHeaderProps {
 
 export const LandingHeader: React.FC<LandingHeaderProps> = ({ navigate }) => {
   const { saasBranding } = useApp();
+  const logoClickCount = useRef(0);
+  const logoClickTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleLogoClick = () => {
+    logoClickCount.current += 1;
+
+    if (logoClickTimeout.current) clearTimeout(logoClickTimeout.current);
+    logoClickTimeout.current = setTimeout(() => {
+      logoClickCount.current = 0;
+    }, 700);
+
+    if (logoClickCount.current === 3) {
+      logoClickCount.current = 0;
+      clearTimeout(logoClickTimeout.current);
+      navigate('/owner/login');
+      return;
+    }
+
+    navigate('/');
+  };
 
   return (
     <header className="border-b border-stone-200 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={handleLogoClick}
           className="flex items-center gap-2.5 text-left"
           aria-label={`${saasBranding.platform_name}, retour à l'accueil`}
+          title="Accueil"
         >
           {Boolean(saasBranding?.logo_url && saasBranding.logo_url.trim()) ? (
             <img
