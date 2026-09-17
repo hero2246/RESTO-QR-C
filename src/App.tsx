@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
+import { LandingHeader } from './components/LandingHeader';
 import { Toast } from './components/Toast';
 
 // Public & Restaurant Pages
@@ -275,8 +276,8 @@ function AppContent({
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900 flex flex-col selection:bg-orange-500 selection:text-white">
-      {/* Do not render standard navbar on secret owner portal */}
-      {!isOwnerPath && <Navbar currentPath={currentPath} navigate={navigate} />}
+      {(currentPath === '/' || currentPath === '') && <LandingHeader navigate={navigate} />}
+      {currentPath !== '/' && currentPath !== '' && !isOwnerPath && <Navbar currentPath={currentPath} navigate={navigate} />}
       
       <main className="flex-1">
         {renderRoute()}
