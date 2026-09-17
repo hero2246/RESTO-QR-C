@@ -275,8 +275,8 @@ function AppContent({
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900 flex flex-col selection:bg-orange-500 selection:text-white">
-      {/* Do not render standard navbar on secret owner portal */}
-      {!isOwnerPath && <Navbar currentPath={currentPath} navigate={navigate} />}
+      {/* Keep the public landing page focused; show navigation everywhere else. */}
+      {currentPath !== '/' && !isOwnerPath && <Navbar currentPath={currentPath} navigate={navigate} />}
       
       <main className="flex-1">
         {renderRoute()}
