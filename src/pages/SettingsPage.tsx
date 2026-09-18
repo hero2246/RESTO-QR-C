@@ -18,7 +18,9 @@ import {
   ArrowUpRight,
   FileText,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Globe2,
+  Link2
 } from 'lucide-react';
 import { PaymentModal } from '../components/PaymentModal';
 
@@ -50,6 +52,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ navigate }) => {
   const [coverImage, setCoverImage] = useState(activeRestaurant?.cover_image || '');
   const [primaryColor, setPrimaryColor] = useState(activeRestaurant?.primary_color || '#ea580c');
   const [secondaryColor, setSecondaryColor] = useState(activeRestaurant?.secondary_color || '#0f172a');
+  const [customDomain, setCustomDomain] = useState(activeRestaurant?.custom_domain || '');
+
+  const normalizedDomain = customDomain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  const domainIsValid = normalizedDomain === '' || /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(normalizedDomain);
 
   useEffect(() => {
     if (activeRestaurant) {
@@ -64,6 +70,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ navigate }) => {
       setCoverImage(activeRestaurant.cover_image || '');
       setPrimaryColor(activeRestaurant.primary_color || '#ea580c');
       setSecondaryColor(activeRestaurant.secondary_color || '#0f172a');
+      setCustomDomain(activeRestaurant.custom_domain || '');
     }
   }, [activeRestaurant]);
 
@@ -113,6 +120,36 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ navigate }) => {
             </button>
           </div>
         </div>
+
+        <section className="bg-stone-950 text-white rounded-3xl border border-stone-800 p-6 shadow-xl space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-orange-500/15 text-orange-400 flex items-center justify-center">
+                <Globe2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-black">Votre site web indépendant</h2>
+                <p className="text-xs text-stone-400 mt-1 max-w-xl">Connectez un domaine à votre restaurant. Vos clients arriveront directement sur votre menu, sans voir la plateforme RESTO QR.</p>
+              </div>
+            </div>
+            <a href="https://www.ovhcloud.com/fr/domains/" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-stone-900 hover:bg-orange-50 transition">
+              Acheter un domaine <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end">
+            <label className="space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Domaine personnalisé</span>
+              <input value={customDomain} onChange={(e) => setCustomDomain(e.target.value)} placeholder="www.monrestaurant.com" className="w-full rounded-xl border border-stone-700 bg-stone-900 px-3.5 py-2.5 text-sm text-white outline-none focus:border-orange-500" />
+              {!domainIsValid && <span className="block text-[11px] text-red-400">Saisissez un domaine valide, par exemple restaurant.com.</span>}
+            </label>
+            <button type="button" disabled={!domainIsValid || !normalizedDomain} onClick={() => { updateRestaurant(activeRestaurant.id, { custom_domain: normalizedDomain, domain_status: 'PENDING' }); showToast('Domaine enregistré. Configurez le DNS indiqué par votre registrar.', 'success'); }} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-orange-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-40 transition">
+              <Link2 className="w-3.5 h-3.5" /> Connecter
+            </button>
+          </div>
+          <div className="rounded-xl border border-stone-800 bg-stone-900/70 px-3.5 py-3 text-[11px] text-stone-400">
+            {activeRestaurant.custom_domain ? <><span className="font-bold text-amber-300">{activeRestaurant.custom_domain}</span> est en statut <span className="font-bold text-amber-300">{activeRestaurant.domain_status || 'PENDING'}</span>. La connexion DNS finale doit être faite auprès de votre registrar.</> : <>Achetez d’abord votre domaine, puis saisissez-le ici pour générer votre demande de connexion.</>}
+          </div>
+        </section>
 
         {/* Mon Forfait SaaS & Quotas */}
         {(() => {

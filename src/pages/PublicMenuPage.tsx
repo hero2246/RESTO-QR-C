@@ -30,7 +30,7 @@ export const PublicMenuPage: React.FC<PublicMenuPageProps> = ({ slug, restaurant
 
   const targetSlug = slug || restaurantSlug || '';
   // Find restaurant by slug
-  const restaurant = restaurants.find(r => r.slug.toLowerCase() === targetSlug.toLowerCase()) || restaurants[0];
+  const restaurant = restaurants.find(r => r.slug.toLowerCase() === targetSlug.toLowerCase());
 
   // Selected Category
   const restoCategories = useMemo(() => {
