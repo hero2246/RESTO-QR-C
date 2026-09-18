@@ -405,20 +405,20 @@ const INITIAL_RESERVATIONS: RestaurantReservation[] = [
 ];
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // No authenticated user is assumed on a fresh browser.
+  // Authentication state is kept in the current browser session; business data remains Supabase-only.
   const [currentUser, setCurrentUser] = useState<Profile | null>(() => {
     try {
-      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.USER) || localPersistenceDisabled.getItem('restoqr_user_v3');
+      const saved = sessionStorage.getItem(STORAGE_KEYS.USER);
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
 
-  // Dedicated Owner Session flag (requires secret PIN/Password at /owner)
+  // Dedicated Owner Session flag survives a refresh without persisting business data locally.
   const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState<boolean>(() => {
     try {
-      return (localPersistenceDisabled.getItem(STORAGE_KEYS.OWNER_AUTH) || localPersistenceDisabled.getItem('restoqr_owner_auth_v3')) === 'true';
+      return sessionStorage.getItem(STORAGE_KEYS.OWNER_AUTH) === 'true';
     } catch {
       return false;
     }
@@ -874,8 +874,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       cleanPin === '789456' || 
       cleanPin === '249012';
 
-    if (emailMatches && passwordMatches && pinMatches) {
-      setIsOwnerAuthenticated(true);
+  if (emailMatches && passwordMatches && pinMatches) {
+    sessionStorage.setItem(STORAGE_KEYS.OWNER_AUTH, 'true');
+    sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({
+      id: 'usr-owner-root',
+      email: cleanEmail || validEmail || 'dalpahayaya249@gmail.com',
+      name: 'Alpha Yaya Diallo (Super Admin & Propriétaire Fondateur)',
+      role: 'OWNER',
+      is_active: true,
+    }));
+    setIsOwnerAuthenticated(true);
       const ownerProfile: Profile = {
         id: 'usr-owner-root',
         email: cleanEmail || validEmail || 'dalpahayaya249@gmail.com',
@@ -962,6 +970,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [addAuditLog, showToast]);
 
   const lockOwnerSession = useCallback(() => {
+    sessionStorage.removeItem(STORAGE_KEYS.OWNER_AUTH);
+    sessionStorage.removeItem(STORAGE_KEYS.USER);
     setIsOwnerAuthenticated(false);
     if (currentUser?.role === 'OWNER') {
       // Revert to default demo restaurant manager
@@ -1110,6 +1120,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setNotifications(prev => [checkoutNotif, ...prev]);
       }
     }
+    sessionStorage.removeItem(STORAGE_KEYS.USER);
+    sessionStorage.removeItem(STORAGE_KEYS.OWNER_AUTH);
     setCurrentUser(null);
     setIsOwnerAuthenticated(false);
     showToast('Déconnecté de la session', 'info');
