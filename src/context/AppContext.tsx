@@ -793,6 +793,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return restaurants[0] || null;
   }, [currentUser, restaurants]);
 
+  // Shared restaurant data is loaded from Supabase and mirrored back after local changes.
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    const entityTypes = ['category', 'product', 'table', 'order', 'staff', 'reservation'] as const;
+    void supabase.from('restaurant_app_data').select('restaurant_id, entity_type, entity_id, payload').then(({ data, error }) => {
+      if (cancelled || error || !data) return;
+      const rows = data as Array<{ restaurant_id: string; entity_type: string; entity_id: string; payload: unknown }>;
+      const read = (type: string) => rows.filter(row => row.entity_type === type).map(row => row.payload);
+      const merge = <T extends { id: string; restaurant_id?: string }>(local: T[], remote: unknown[]) => {
+        const remoteItems = remote.filter((item): item is T => Boolean(item && typeof item === 'object' && 'id' in item));
+        const remoteIds = new Set(remoteItems.map(item => item.id));
+        return [...remoteItems, ...local.filter(item => !remoteIds.has(item.id))];
+      };
+      setCategories(current => merge(current, read('category')));
+      setProducts(current => merge(current, read('product')));
+      setTables(current => merge(current, read('table')));
+      setOrders(current => merge(current, read('order')));
+      setRestaurantStaff(current => merge(current, read('staff')));
+      setReservations(current => merge(current, read('reservation')));
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const collections: Array<[string, Array<{ id: string; restaurant_id?: string }>]> = [
+      ['category', categories], ['product', products], ['table', tables], ['order', orders], ['staff', restaurantStaff], ['reservation', reservations],
+    ];
+    const rows = collections.flatMap(([entity_type, items]) => items.filter(item => item.restaurant_id).map(item => ({
+      restaurant_id: item.restaurant_id as string,
+      entity_type,
+      entity_id: item.id,
+      payload: item,
+    })));
+    if (rows.length > 0) void supabase.from('restaurant_app_data').upsert(rows, { onConflict: 'restaurant_id,entity_type,entity_id' });
+  }, [categories, products, tables, orders, restaurantStaff, reservations]);
+
   const setActiveRestaurantId = useCallback((id: string) => {
     const resto = restaurants.find(r => r.id === id);
     if (resto && currentUser) {
