@@ -711,7 +711,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!supabase) return;
     let cancelled = false;
     void supabase.from('restaurants').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
-      if (cancelled || error || !data?.length) return;
+      if (cancelled) return;
+      if (error) {
+        showToast('Impossible de charger les restaurants depuis Supabase.', 'error');
+        return;
+      }
+      if (!data) return;
       setRestaurants(current => {
         const remoteById = new Map((data as Restaurant[]).map(restaurant => [restaurant.id, restaurant]));
         const localOnly = current.filter(restaurant => !remoteById.has(restaurant.id));
@@ -719,7 +724,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [showToast]);
 
   // Save changes to localStorage
   useEffect(() => {
@@ -2886,7 +2891,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateTable = useCallback((id: string, name: string, isActive: boolean) => {
     setTables(prev => prev.map(t => t.id === id ? { ...t, name, is_active: isActive } : t));
-    showToast('Table mise à jour', 'success');
+    showToast('Table mise �� jour', 'success');
   }, [showToast]);
 
   const deleteTable = useCallback((id: string) => {
