@@ -2068,6 +2068,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       email: data.email.trim().toLowerCase(),
       password: data.password,
       options: {
+        emailRedirectTo: `${window.location.origin}/login?confirmed=1`,
         data: {
           owner_name: data.owner_name,
           restaurant_id: newResto.id,
@@ -2107,19 +2108,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return newResto;
   }, [addAuditLog, showToast]);
 
-  const updateRestaurant = useCallback((id: string, updates: Partial<Restaurant>) => {
+  const updateRestaurant = useCallback(async (id: string, updates: Partial<Restaurant>): Promise<boolean> => {
     // Only the owner of this restaurant or the SaaS OWNER can update
     if (currentUser?.role !== 'OWNER' && currentUser?.restaurant_id !== id) {
       showToast('Accès refusé : Vous ne pouvez pas modifier un autre restaurant', 'error');
       addAuditLog('ACCES_INTERDIT', 'RESTAURANT', id, 'Tentative de modification non autorisée d’un tenant', 'DENIED');
-      return;
-    }
+  return false;
+  }
 
-    // Safety: SaaS OWNER cannot modify restaurant operational menus directly
-    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
-    if (supabase) void supabase.from('restaurants').update(updates).eq('id', id);
-    addAuditLog('MISE_A_JOUR_RESTAURANT', 'RESTAURANT', id, `Mise à jour des informations restaurant`);
-    showToast('Informations du restaurant mises à jour', 'success');
+  if (!supabase) {
+    showToast('Supabase n’est pas configuré.', 'error');
+    return false;
+  }
+
+  const { error } = await supabase.from('restaurants').update(updates).eq('id', id);
+  if (error) {
+    showToast(`Mise à jour impossible : ${error.message}`, 'error');
+    return false;
+  }
+
+  setRestaurants(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+  addAuditLog('MISE_A_JOUR_RESTAURANT', 'RESTAURANT', id, `Mise à jour des informations restaurant`);
+  showToast('Informations du restaurant mises à jour', 'success');
+  return true;
   }, [currentUser, addAuditLog, showToast]);
 
   const setRestaurantStatus = useCallback((id: string, status: RestaurantStatus) => {

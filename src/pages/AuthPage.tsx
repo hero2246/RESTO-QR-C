@@ -79,7 +79,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
       setError('Supabase est inaccessible. Vérifiez la configuration et réessayez.');
       return;
     }
-    const chosenResto = restaurants.find(r => r.id === restaurantId) || restaurants[0];
+    const { data: remoteRestaurant } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('id', restaurantId)
+      .maybeSingle();
+    const chosenResto = remoteRestaurant || restaurants.find(r => r.id === restaurantId) || restaurants[0];
     if (!chosenResto) {
       setError('Aucun restaurant trouvé pour ce compte.');
       return;

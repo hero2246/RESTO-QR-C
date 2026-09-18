@@ -39,6 +39,8 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
   const handleApproveRestaurant = async (restaurant: Restaurant) => {
     setApprovingRestaurantId(restaurant.id);
     try {
+      const saved = await updateRestaurant(restaurant.id, { status: 'ACTIVE' });
+      if (!saved) throw new Error('database');
       const response = await fetch('/api/send-approval-email', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -49,11 +51,13 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
           loginUrl: `${window.location.origin}/login`,
         }),
       });
-      if (!response.ok) throw new Error('email');
-      updateRestaurant(restaurant.id, { status: 'ACTIVE' });
-      showToast('Restaurant approuvé. Email envoyé au propriétaire.', 'success');
+      if (!response.ok) {
+        showToast('Restaurant approuvé, mais l’email n’a pas pu être envoyé.', 'error');
+        return;
+      }
+      showToast('Restaurant approuvé et email envoyé au propriétaire.', 'success');
     } catch {
-      showToast('Email non envoyé. Vérifiez la clé Brevo avant d’approuver.', 'error');
+      showToast('Approbation impossible : vérifiez la connexion Supabase.', 'error');
     } finally {
       setApprovingRestaurantId(null);
     }
