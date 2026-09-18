@@ -5,6 +5,10 @@ const env = (import.meta as any).env || {};
 const supabaseUrl: string = env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey: string = env.VITE_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
+if (import.meta.env.DEV && (!supabaseUrl || !supabaseAnonKey)) {
+  console.warn('[v0] Supabase client variables are not exposed to the Vite bundle.');
+}
+
 export const getSupabaseConfigurationError = (): string | null => {
   if (!supabaseUrl || !supabaseAnonKey) {
     return 'Variables Supabase absentes. Vérifiez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.';
