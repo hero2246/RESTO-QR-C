@@ -712,8 +712,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (data) setRestaurants(data as Restaurant[]);
     };
     void loadRestaurants();
-    const interval = window.setInterval(() => void loadRestaurants(), 5000);
-    return () => { cancelled = true; window.clearInterval(interval); };
+    const channel = supabase
+      .channel('admin-restaurant-registrations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurants' }, payload => {
+        if (cancelled) return;
+        if (payload.eventType === 'INSERT') {
+          const restaurant = payload.new as Restaurant;
+          setRestaurants(current => current.some(item => item.id === restaurant.id) ? current : [restaurant, ...current]);
+          showToast(`Nouvelle inscription en attente : ${restaurant.name}`, 'info');
+        } else if (payload.eventType === 'UPDATE') {
+          const restaurant = payload.new as Restaurant;
+          setRestaurants(current => current.map(item => item.id === restaurant.id ? restaurant : item));
+        } else if (payload.eventType === 'DELETE') {
+          const restaurant = payload.old as Restaurant;
+          setRestaurants(current => current.filter(item => item.id !== restaurant.id));
+        }
+      })
+      .subscribe();
+    const interval = window.setInterval(() => void loadRestaurants(), 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      void supabase.removeChannel(channel);
+    };
   }, [showToast]);
 
   // Supabase is the only persistence layer. Local browser storage is intentionally unused.
