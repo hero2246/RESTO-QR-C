@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { ShieldCheck, Lock, KeyRound, AlertTriangle, ArrowRight, CheckCircle2, Terminal, Eye, EyeOff, Sparkles, Check, Mail } from 'lucide-react';
+import { ShieldCheck, Lock, KeyRound, AlertTriangle, ArrowRight, CheckCircle2, Eye, EyeOff, Mail, Settings2 } from 'lucide-react';
 import { OfficialOwnerEmailModal } from '../../components/owner/OfficialOwnerEmailModal';
 
 interface OwnerAuthPageProps {
@@ -8,9 +8,9 @@ interface OwnerAuthPageProps {
 }
 
 export const OwnerAuthPage: React.FC<OwnerAuthPageProps> = ({ navigate }) => {
-  const { unlockOwnerSession, updateOwnerCredentials, isOwnerAuthenticated, saasBranding, saasSettings } = useApp();
+  const { unlockOwnerSession, isOwnerAuthenticated, saasBranding, saasSettings } = useApp();
   
-  const [activeTab, setActiveTab] = useState<'LOGIN' | 'CREATE_PASSWORD'>('LOGIN');
+  const [activeTab] = useState<'LOGIN'>('LOGIN');
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
 
   // Login form state
@@ -20,15 +20,6 @@ export const OwnerAuthPage: React.FC<OwnerAuthPageProps> = ({ navigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Password creation state
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [customEmail, setCustomEmail] = useState(saasSettings.owner_email || 'dalpahayaya249@gmail.com');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [setupError, setSetupError] = useState<string | null>(null);
-  const [setupSuccess, setSetupSuccess] = useState(false);
 
   // If already authenticated, redirect straight to dashboard
   if (isOwnerAuthenticated) {
@@ -73,43 +64,6 @@ export const OwnerAuthPage: React.FC<OwnerAuthPageProps> = ({ navigate }) => {
     }
   };
 
-  const handleSetupSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSetupError(null);
-
-    if (newPassword.length < 6) {
-      setSetupError('Le mot de passe doit comporter au moins 6 caractères.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setSetupError('Les deux mots de passe saisis ne correspondent pas.');
-      return;
-    }
-
-    if (!/^\d{6}$/.test(newPin)) {
-      setSetupError('Le code PIN de sécurité doit comporter exactement 6 chiffres numériques.');
-      return;
-    }
-
-    if (newPin !== confirmPin) {
-      setSetupError('La confirmation du code PIN ne correspond pas.');
-      return;
-    }
-
-    const ok = updateOwnerCredentials(newPassword, newPin, customEmail);
-    if (ok) {
-      setSetupSuccess(true);
-      setPassword(newPassword);
-      setPinCode(newPin);
-      setEmail(customEmail);
-      setTimeout(() => {
-        setSetupSuccess(false);
-        setActiveTab('LOGIN');
-      }, 1500);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col justify-center items-center p-4 relative overflow-hidden">
       
@@ -135,39 +89,11 @@ export const OwnerAuthPage: React.FC<OwnerAuthPageProps> = ({ navigate }) => {
         {/* Security Card */}
         <div className="bg-stone-900/95 border border-stone-800 backdrop-blur-xl rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
           
-          {/* Mode Switcher */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-stone-950 rounded-2xl border border-stone-800">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('LOGIN');
-                setError(null);
-              }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'LOGIN'
-                  ? 'bg-amber-500/20 border border-amber-500/30 text-amber-300 shadow-xs'
-                  : 'text-stone-400 hover:text-stone-200'
-              }`}
-            >
+          <div className="flex items-center gap-2 p-1.5 bg-stone-950 rounded-2xl border border-stone-800">
+            <div className="flex-1 py-2 px-3 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5">
               <Lock className="w-3.5 h-3.5" />
-              <span>Se Connecter</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('CREATE_PASSWORD');
-                setSetupError(null);
-              }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'CREATE_PASSWORD'
-                  ? 'bg-orange-500/20 border border-orange-500/30 text-orange-300 shadow-xs'
-                  : 'text-stone-400 hover:text-stone-200'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Créer / Changer mon MDP</span>
-            </button>
+              <span>Connexion Super Admin</span>
+            </div>
           </div>
 
           {/* TAB 1: LOGIN FORM */}
@@ -282,143 +208,21 @@ export const OwnerAuthPage: React.FC<OwnerAuthPageProps> = ({ navigate }) => {
 
               </form>
 
-              <div className="pt-3 border-t border-stone-800 flex items-center justify-end text-xs">
+              <div className="pt-3 border-t border-stone-800 flex items-center justify-between gap-3 text-xs">
+                <button
+                  type="button"
+                  onClick={() => navigate('/owner/security')}
+                  className="text-[11px] text-orange-400 hover:text-orange-300 transition flex items-center gap-1.5"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  Gérer les identifiants dans Paramètres
+                </button>
                 <button
                   type="button"
                   onClick={() => navigate('/')}
                   className="text-[11px] text-stone-400 hover:text-white transition"
                 >
-                  Retour à l'accueil
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: CREATE / UPDATE MASTER PASSWORD FORM */}
-          {activeTab === 'CREATE_PASSWORD' && (
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-300 text-xs leading-relaxed">
-                Créez ou modifiez ici votre mot de passe d'accès personnel pour la console Propriétaire. Ces identifiants sont sauvegardés de façon persistante dans votre espace.
-              </div>
-
-              {setupError && (
-                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>{setupError}</span>
-                </div>
-              )}
-
-              {setupSuccess && (
-                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2.5">
-                  <Check className="w-4 h-4 shrink-0" />
-                  <span>Nouveaux identifiants enregistrés avec succès ! Redirection vers l'écran de connexion...</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSetupSubmit} className="space-y-4">
-                
-                <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-                    Email Propriétaire
-                  </label>
-                  <input
-                    type="email"
-                    value={customEmail}
-                    onChange={e => setCustomEmail(e.target.value)}
-                    required
-                    placeholder="votre-email@restoqr.com"
-                    className="w-full px-4 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-orange-500 transition"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-semibold text-stone-300">
-                        Nouveau Mot de Passe
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="text-[10px] text-stone-400 hover:text-stone-200"
-                      >
-                        {showNewPassword ? 'Masquer' : 'Voir'}
-                      </button>
-                    </div>
-                    <input
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      required
-                      placeholder="Min. 6 caractères"
-                      className="w-full px-4 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-orange-500 transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-                      Confirmer le Mot de Passe
-                    </label>
-                    <input
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      required
-                      placeholder="Répétez mot de passe"
-                      className="w-full px-4 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-orange-500 transition"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-                      Nouveau Code PIN (6 chiffres)
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      value={newPin}
-                      onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
-                      required
-                      placeholder="Ex: 852963"
-                      className="w-full px-4 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-sm font-mono tracking-widest text-center text-amber-400 focus:outline-none focus:border-orange-500 transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-                      Confirmer le Code PIN
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      value={confirmPin}
-                      onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                      required
-                      placeholder="Ex: 852963"
-                      className="w-full px-4 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-sm font-mono tracking-widest text-center text-amber-400 focus:outline-none focus:border-orange-500 transition"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition shadow-lg shadow-orange-600/25 flex items-center justify-center gap-2"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Enregistrer mon Mot de Passe d'Accès Maître</span>
-                </button>
-
-              </form>
-
-              <div className="pt-2 text-center">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('LOGIN')}
-                  className="text-xs text-stone-400 hover:text-white transition"
-                >
-                  Retourner au formulaire de connexion
+                  Retour à l&apos;accueil
                 </button>
               </div>
             </div>
