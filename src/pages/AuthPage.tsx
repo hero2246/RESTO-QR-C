@@ -34,7 +34,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
   const [selectedRole, setSelectedRole] = useState<LoginRoleTab>('STAFF_WAITER');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [restaurantId, setRestaurantId] = useState(restaurants[0]?.id || 'resto-alpha');
   const [error, setError] = useState<string | null>(null);
 
 
@@ -79,12 +78,28 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
       setError('Supabase est inaccessible. Vérifiez la configuration et réessayez.');
       return;
     }
-    const { data: remoteRestaurant } = await supabase
-      .from('restaurants')
-      .select('*')
-      .eq('id', restaurantId)
-      .maybeSingle();
-    const chosenResto = remoteRestaurant || restaurants.find(r => r.id === restaurantId) || restaurants[0];
+    const staffAccount = restaurantStaff.find(staff => staff.email.trim().toLowerCase() === cleanEmail);
+    let remoteRestaurant = null;
+    if (selectedRole === 'RESTAURANT_OWNER') {
+      const result = await supabase
+        .from('restaurants')
+        .select('*')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
+      remoteRestaurant = result.data;
+    } else if (staffAccount) {
+      const result = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('id', staffAccount.restaurant_id)
+        .maybeSingle();
+      remoteRestaurant = result.data;
+      if (!staffAccount.is_active || staffAccount.employment_status === 'INACTIVE') {
+        setError('Votre compte employé est désactivé. Votre ancien responsable doit vous réinviter.');
+        return;
+      }
+    }
+    const chosenResto = remoteRestaurant || (staffAccount ? restaurants.find(r => r.id === staffAccount.restaurant_id) : null);
     if (!chosenResto) {
       setError('Aucun restaurant trouvé pour ce compte.');
       return;
@@ -95,8 +110,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
     }
     setActiveRestaurant(chosenResto);
 
-    // Look up staff details if existent in the staff registry
-    const matchedStaff = restaurantStaff.find(s => s.email.toLowerCase() === email.toLowerCase());
+    // The authenticated email determines the only restaurant this account may access.
+    const matchedStaff = staffAccount;
 
     if (selectedRole === 'RESTAURANT_OWNER') {
       login(email, 'RESTAURANT_OWNER', chosenResto?.id);
@@ -327,25 +342,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1.5">
-              Sélectionner le Restaurant
-            </label>
-            <div className="relative">
-              <select
-                value={restaurantId}
-                onChange={e => setRestaurantId(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-stone-200 bg-white text-xs font-medium focus:ring-2 focus:ring-orange-500 focus:outline-none"
-              >
-                {restaurants.map(resto => (
-                  <option key={resto.id} value={resto.id}>
-                    {resto.name} ({resto.subdomain})
-                  </option>
-                ))}
-              </select>
-              <Store className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </div>
+  <div className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-xs text-orange-800">
+  Votre email détermine automatiquement le restaurant et les droits associés à votre compte.
+  </div>
+  
 
           <div>
             <label className="block text-xs font-bold text-stone-700 mb-1.5">
