@@ -2081,6 +2081,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       throw authError;
     }
 
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email: data.email.trim().toLowerCase(),
+      options: { emailRedirectTo: `${window.location.origin}/login?confirmed=1` },
+    });
+    if (resendError) {
+      showToast(`Compte créé, mais l’email de confirmation n’a pas pu être renvoyé : ${resendError.message}`, 'error');
+    }
+
     const { error: restaurantError } = await supabase.from('restaurants').upsert(newResto, { onConflict: 'id' });
     if (restaurantError) {
       showToast(`Inscription non enregistrée : ${restaurantError.message}`, 'error');
