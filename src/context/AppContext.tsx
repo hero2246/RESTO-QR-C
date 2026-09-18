@@ -70,6 +70,7 @@ import {
   INITIAL_RESTAURANT_ACTIVITIES
 } from '../data/seedData';
 import { createDefaultWebsiteConfig } from '../data/restaurantThemes';
+import { supabase } from '../lib/supabase';
 import { sound } from '../utils/sound';
 import confetti from 'canvas-confetti';
 
@@ -703,6 +704,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     window.addEventListener('storage', syncRestaurants);
     return () => window.removeEventListener('storage', syncRestaurants);
+  }, []);
+
+  // Supabase is the shared source for restaurant registrations across devices.
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    void supabase.from('restaurants').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+      if (cancelled || error || !data?.length) return;
+      setRestaurants(current => {
+        const remoteById = new Map((data as Restaurant[]).map(restaurant => [restaurant.id, restaurant]));
+        const localOnly = current.filter(restaurant => !remoteById.has(restaurant.id));
+        return [...(data as Restaurant[]), ...localOnly];
+      });
+    });
+    return () => { cancelled = true; };
   }, []);
 
   // Save changes to localStorage
@@ -2039,6 +2055,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Add to collections
     setRestaurants(prev => [newResto, ...prev]);
+    if (supabase) {
+      void supabase.from('restaurants').upsert(newResto).then(({ error }) => {
+        if (error) showToast('Inscription locale enregistrée, mais synchronisation Supabase impossible.', 'error');
+      });
+    }
     setCategories(prev => [...prev, ...defaultCategories]);
     setProducts(prev => [...prev, ...defaultProducts]);
     setTables(prev => [...prev, ...defaultTables]);
@@ -2071,6 +2092,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Safety: SaaS OWNER cannot modify restaurant operational menus directly
     setRestaurants(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+    if (supabase) void supabase.from('restaurants').update(updates).eq('id', id);
     addAuditLog('MISE_A_JOUR_RESTAURANT', 'RESTAURANT', id, `Mise à jour des informations restaurant`);
     showToast('Informations du restaurant mises à jour', 'success');
   }, [currentUser, addAuditLog, showToast]);
@@ -2082,6 +2104,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     setRestaurants(prev => prev.map(r => {
       if (r.id === id) {
+        if (supabase) void supabase.from('restaurants').update({ status }).eq('id', id);
         addAuditLog('MODIFICATION_STATUT_RESTAURANT', 'RESTAURANT', r.name, `Statut changé en: ${status}`);
         return { ...r, status };
       }
