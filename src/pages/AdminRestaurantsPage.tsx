@@ -210,7 +210,7 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
                         }`}
                       >
                         {resto.status === 'ACTIVE' ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                        <span>{resto.status === 'ACTIVE' ? 'Actif' : 'Suspendu'}</span>
+                        <span>{resto.status === 'ACTIVE' ? 'Actif' : resto.status === 'PENDING' ? 'En attente' : 'Suspendu'}</span>
                       </button>
                     </div>
 
@@ -243,7 +243,18 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
                 </div>
 
                 {/* Footer buttons */}
-                <div className="p-4 pt-3 border-t border-stone-100 bg-stone-50 flex items-center justify-between gap-2">
+                  <div className="p-4 pt-3 border-t border-stone-100 bg-stone-50 flex items-center justify-between gap-2">
+                  {resto.status === 'PENDING' && (
+                    <a
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(resto.email)}&su=${encodeURIComponent('Votre restaurant est approuvé')}&body=${encodeURIComponent(`Bonjour ${resto.owner_name},%0A%0AVotre restaurant ${resto.name} a été approuvé par le Super Admin.%0A%0AVous pouvez vous connecter ici : ${window.location.origin}/login%0A%0ACordialement, RESTO QR`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => updateRestaurant(resto.id, { status: 'ACTIVE' })}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition"
+                    >
+                      Approuver & envoyer le lien
+                    </a>
+                  )}
                   <button
                     onClick={() => handleManageAsRestaurant(resto)}
                     className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-black text-white text-xs font-bold transition flex items-center gap-1"
