@@ -2064,6 +2064,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       showToast('Supabase n’est pas configuré. Inscription impossible.', 'error');
       throw new Error('Supabase is not configured');
     }
+    const { error: authError } = await supabase.auth.signUp({
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+      options: {
+        data: {
+          owner_name: data.owner_name,
+          restaurant_id: newResto.id,
+          role: 'RESTAURANT_OWNER',
+        },
+      },
+    });
+    if (authError) {
+      showToast(`Compte propriétaire non créé : ${authError.message}`, 'error');
+      throw authError;
+    }
+
     const { error: restaurantError } = await supabase.from('restaurants').upsert(newResto, { onConflict: 'id' });
     if (restaurantError) {
       showToast(`Inscription non enregistrée : ${restaurantError.message}`, 'error');

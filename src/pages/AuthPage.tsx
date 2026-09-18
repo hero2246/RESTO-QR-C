@@ -80,7 +80,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
       return;
     }
     const chosenResto = restaurants.find(r => r.id === restaurantId) || restaurants[0];
-    if (chosenResto) setActiveRestaurant(chosenResto);
+    if (!chosenResto) {
+      setError('Aucun restaurant trouvé pour ce compte.');
+      return;
+    }
+    if (selectedRole === 'RESTAURANT_OWNER' && chosenResto.status !== 'ACTIVE') {
+      setError('Votre restaurant est encore en attente de validation par le Super Admin.');
+      return;
+    }
+    setActiveRestaurant(chosenResto);
 
     // Look up staff details if existent in the staff registry
     const matchedStaff = restaurantStaff.find(s => s.email.toLowerCase() === email.toLowerCase());
