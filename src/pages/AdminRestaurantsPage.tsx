@@ -45,23 +45,12 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ restaurantId: restaurant.id }),
       });
-      const approvalResult = await approvalResponse.json().catch(() => null) as { error?: string; restaurant?: { status?: string } } | null;
+      const approvalResult = await approvalResponse.json().catch(() => null) as { error?: string; emailSent?: boolean; emailError?: string; restaurant?: { status?: string } } | null;
       if (!approvalResponse.ok) throw new Error(approvalResult?.error || 'database');
       const saved = approvalResult?.restaurant?.status === 'ACTIVE';
       if (!saved) throw new Error('Le statut ACTIVE n’a pas été confirmé.');
-      const response = await fetch('/api/send-approval-email', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          to: restaurant.email,
-          ownerName: restaurant.owner_name,
-          restaurantName: restaurant.name,
-          loginUrl: `${window.location.origin}/login`,
-        }),
-      });
-      if (!response.ok) {
-        const emailError = await response.json().catch(() => null) as { error?: string } | null;
-        showToast(`Restaurant approuvé, email non envoyé : ${emailError?.error || response.statusText}`, 'error');
+      if (!approvalResult?.emailSent) {
+        showToast(`Restaurant approuvé, email non envoyé : ${approvalResult?.emailError || 'configuration Brevo manquante'}`, 'error');
         return;
       }
       showToast('Restaurant approuvé et email envoyé au propriétaire.', 'success');
