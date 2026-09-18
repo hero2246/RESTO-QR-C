@@ -2077,17 +2077,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       },
     });
     if (authError) {
-      showToast(`Compte propriétaire non créé : ${authError.message}`, 'error');
+      const normalizedAuthMessage = authError.message.toLowerCase().includes('rate limit')
+        ? 'Trop de demandes de confirmation. Attendez quelques minutes avant de réessayer, puis utilisez une nouvelle adresse email si nécessaire.'
+        : authError.message.toLowerCase().includes('already registered')
+          ? 'Cette adresse email possède déjà un compte. Utilisez la connexion ou une autre adresse email.'
+          : `Compte propriétaire non créé : ${authError.message}`;
+      showToast(normalizedAuthMessage, 'error');
       throw authError;
-    }
-
-    const { error: resendError } = await supabase.auth.resend({
-      type: 'signup',
-      email: data.email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/login?confirmed=1` },
-    });
-    if (resendError) {
-      showToast(`Compte créé, mais l’email de confirmation n’a pas pu être renvoyé : ${resendError.message}`, 'error');
     }
 
     const { error: restaurantError } = await supabase.from('restaurants').upsert(newResto, { onConflict: 'id' });

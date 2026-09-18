@@ -254,7 +254,7 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
 
             {/* Submit */}
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-              Après la création, un email de confirmation sera envoyé à votre adresse. Confirmez-la pour activer votre compte, puis attendez l’approbation du Super Admin.
+              Après la création, Supabase enverra un seul email de confirmation à votre adresse. Cliquez sur son lien pour confirmer votre compte, puis attendez l’approbation du Super Admin.
             </div>
 
             <div className="pt-4">
