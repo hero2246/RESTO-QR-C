@@ -40,8 +40,15 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
   const handleApproveRestaurant = async (restaurant: Restaurant) => {
     setApprovingRestaurantId(restaurant.id);
     try {
-      const saved = await setRestaurantStatus(restaurant.id, 'ACTIVE');
-      if (!saved) throw new Error('database');
+      const approvalResponse = await fetch('/api/approve-restaurant', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ restaurantId: restaurant.id }),
+      });
+      const approvalResult = await approvalResponse.json().catch(() => null) as { error?: string; restaurant?: { status?: string } } | null;
+      if (!approvalResponse.ok) throw new Error(approvalResult?.error || 'database');
+      const saved = approvalResult?.restaurant?.status === 'ACTIVE';
+      if (!saved) throw new Error('Le statut ACTIVE n’a pas été confirmé.');
       const response = await fetch('/api/send-approval-email', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -58,8 +65,8 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
         return;
       }
       showToast('Restaurant approuvé et email envoyé au propriétaire.', 'success');
-    } catch {
-      showToast('Approbation impossible : vérifiez la connexion Supabase.', 'error');
+    } catch (error) {
+      showToast(`Approbation impossible : ${error instanceof Error ? error.message : 'erreur serveur'}`, 'error');
     } finally {
       setApprovingRestaurantId(null);
     }
