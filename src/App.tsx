@@ -51,7 +51,15 @@ function AppContent({
   currentPath: string;
   navigate: (path: string) => void;
 }) {
-  const { currentUser, showToast } = useApp();
+  const { currentUser, showToast, restaurants } = useApp();
+
+  useEffect(() => {
+    const hostname = window.location.hostname.toLowerCase();
+    const isPlatformHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.vercel.app');
+    if (isPlatformHost || currentPath.startsWith('/r/')) return;
+    const matchedRestaurant = restaurants.find((restaurant) => restaurant.custom_domain?.toLowerCase() === hostname && restaurant.status === 'ACTIVE');
+    if (matchedRestaurant) navigate(`/r/${matchedRestaurant.slug}`);
+  }, [currentPath, navigate, restaurants]);
 
   // Strict Role-Based Access Control (RBAC) Guard
   useEffect(() => {

@@ -2,7 +2,7 @@ import React from 'react';
 import { Order, Restaurant } from '../types';
 import { useApp } from '../context/AppContext';
 import { formatFCFA, formatTime, formatDate } from '../utils/format';
-import { X, Printer, CheckCircle2, Sparkles } from 'lucide-react';
+import { X, Printer, CheckCircle2, Download } from 'lucide-react';
 
 interface DigitalReceiptModalProps {
   order: Order;
@@ -33,6 +33,31 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownload = () => {
+    const receiptText = [
+      restaurant.name,
+      restaurant.address,
+      restaurant.phone,
+      '',
+      `Commande : ${order.order_number}`,
+      `Date : ${formatDate(order.created_at)} à ${formatTime(order.created_at)}`,
+      '',
+      ...order.items.map(item => `${item.quantity}x ${item.product_name} - ${formatFCFA(item.subtotal)}`),
+      '',
+      `TOTAL TTC : ${formatFCFA(order.total_amount)}`,
+      `Statut : ${order.status === 'COMPLETED' ? 'RÉGLÉ & CLÔTURÉ' : 'ENREGISTRÉ'}`,
+      '',
+      `Signature : ${saasBranding.platform_name || 'RESTO QR'}`,
+    ].join('\\n');
+    const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ticket-${order.order_number}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -163,7 +188,12 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
           </div>
 
           {/* Section 29 & 85: Mandatory discreet SaaS Branding at ticket bottom */}
-          {!hideBranding && (
+          <div className="pt-2 pb-1 text-center">
+            <span className="text-[9px] text-stone-400 font-sans tracking-wide">
+              Signature numérique : <strong className="font-semibold text-stone-500">{saasBranding.platform_name || 'RESTO QR'}</strong>
+            </span>
+          </div>
+          {false && !hideBranding && (
             <div className="pt-2 pb-1 text-center">
               <span className="text-[9px] text-stone-400 font-sans tracking-wide">
                 Powered by <strong className="font-semibold text-stone-500">{saasBranding.platform_name || 'RESTO QR'}</strong>
@@ -179,6 +209,14 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
             className="flex-1 py-2 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-100 transition"
           >
             Fermer
+          </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="flex-1 py-2 px-3 rounded-xl text-xs font-bold border border-stone-200 text-stone-700 hover:bg-stone-100 transition flex items-center justify-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Télécharger</span>
           </button>
           <button
             id="btn-print-receipt"

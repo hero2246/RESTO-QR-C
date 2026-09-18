@@ -30,7 +30,8 @@ export const PublicMenuPage: React.FC<PublicMenuPageProps> = ({ slug, restaurant
 
   const targetSlug = slug || restaurantSlug || '';
   // Find restaurant by slug
-  const restaurant = restaurants.find(r => r.slug.toLowerCase() === targetSlug.toLowerCase()) || restaurants[0];
+  const restaurant = restaurants.find(r => r.slug.toLowerCase() === targetSlug.toLowerCase());
+  const paymentConfig = restaurant as (typeof restaurant & { wave_payment_url?: string; orange_money_payment_url?: string; payment_qr_url?: string });
 
   // Selected Category
   const restoCategories = useMemo(() => {
@@ -706,8 +707,21 @@ export const PublicMenuPage: React.FC<PublicMenuPageProps> = ({ slug, restaurant
             {/* Cart Footer */}
             {cart.length > 0 && (
               <div className="p-4 sm:p-5 border-t border-stone-200 bg-stone-50 shrink-0">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-stone-600 font-medium">Total à régler en caisse / table</span>
+          <div className="mb-4 rounded-2xl border border-orange-100 bg-orange-50/70 p-3.5">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div>
+                <p className="text-xs font-black text-stone-900">Payer maintenant</p>
+                <p className="text-[11px] text-stone-500">Scannez le QR du restaurant ou ouvrez votre moyen de paiement.</p>
+              </div>
+              {paymentConfig?.payment_qr_url && <img src={paymentConfig.payment_qr_url} alt="QR code de paiement" className="w-16 h-16 rounded-lg border border-white bg-white object-contain" />}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {paymentConfig?.wave_payment_url && <a href={paymentConfig.wave_payment_url} target="_blank" rel="noreferrer" className="rounded-xl bg-[#19a9e5] px-3 py-2 text-center text-[11px] font-black text-white hover:opacity-90">Payer avec Wave</a>}
+              {paymentConfig?.orange_money_payment_url && <a href={paymentConfig.orange_money_payment_url} target="_blank" rel="noreferrer" className="rounded-xl bg-[#ff7900] px-3 py-2 text-center text-[11px] font-black text-white hover:opacity-90">Payer avec Orange Money</a>}
+            </div>
+          </div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-stone-600 font-medium">Total à régler en caisse / table</span>
                   <span className="text-xl font-extrabold text-stone-900">{formatFCFA(cartTotal)}</span>
                 </div>
 
