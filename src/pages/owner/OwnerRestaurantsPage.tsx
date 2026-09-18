@@ -42,6 +42,8 @@ export const OwnerRestaurantsPage: React.FC<OwnerRestaurantsPageProps> = ({ navi
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Filtered restaurants
+  const pendingRestaurants = restaurants.filter(resto => resto.status === 'PENDING');
+
   const filteredRestaurants = restaurants.filter(resto => {
     const matchQuery = 
       resto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,6 +79,17 @@ export const OwnerRestaurantsPage: React.FC<OwnerRestaurantsPageProps> = ({ navi
             </span>
           </div>
         </div>
+
+        {pendingRestaurants.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setStatusFilter('PENDING')}
+            className="w-full rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-left text-xs text-amber-200 hover:bg-amber-500/15 transition"
+          >
+            <strong>{pendingRestaurants.length} demande{pendingRestaurants.length > 1 ? 's' : ''} en attente</strong>
+            <span className="ml-2 text-amber-300/80">Cliquez pour afficher les restaurants à valider.</span>
+          </button>
+        )}
 
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-stone-900 border border-stone-800 p-4 rounded-2xl">
@@ -229,6 +242,18 @@ export const OwnerRestaurantsPage: React.FC<OwnerRestaurantsPageProps> = ({ navi
                         <td className="py-4 px-5 text-right">
                           <div className="flex items-center justify-end gap-2">
                             
+                            {resto.status === 'PENDING' && (
+                              <button
+                                type="button"
+                                onClick={() => setRestaurantStatus(resto.id, 'ACTIVE')}
+                                className="p-2 rounded-xl border border-emerald-600/30 bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600/20 text-xs font-semibold flex items-center gap-1.5"
+                                title="Approuver le restaurant"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span className="hidden md:inline">Approuver</span>
+                              </button>
+                            )}
+
                             {/* Toggle Suspend/Activate */}
                             <button
                               onClick={() => setRestaurantStatus(resto.id, isSuspended ? 'ACTIVE' : 'SUSPENDED')}

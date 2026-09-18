@@ -691,6 +691,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, 4000);
   }, []);
 
+  // Keep admin tabs synchronized when a restaurant registers in another tab.
+  useEffect(() => {
+    const syncRestaurants = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEYS.RESTAURANTS || !event.newValue) return;
+      try {
+        setRestaurants(JSON.parse(event.newValue));
+      } catch {
+        // Ignore malformed external storage updates.
+      }
+    };
+    window.addEventListener('storage', syncRestaurants);
+    return () => window.removeEventListener('storage', syncRestaurants);
+  }, []);
+
   // Save changes to localStorage
   useEffect(() => {
     try {
@@ -1862,7 +1876,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Admin Plan Override
   const adminOverridePlan = useCallback((restaurantId: string, planId: string, durationDays: number, reason: string) => {
     if (currentUser?.role !== 'OWNER') {
-      showToast('Action réservée au propriétaire', 'error');
+      showToast('Action réserv��e au propriétaire', 'error');
       return;
     }
     const expiresAt = new Date(Date.now() + durationDays * 86400000).toISOString();
