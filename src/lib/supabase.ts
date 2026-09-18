@@ -36,7 +36,7 @@ if (isSupabaseConfigured()) {
       },
     });
   } catch (err) {
-    console.warn('Supabase initialization failed, falling back to local client:', err);
+    console.error('[v0] Supabase initialization failed:', err);
   }
 }
 

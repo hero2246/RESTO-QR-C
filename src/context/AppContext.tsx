@@ -289,6 +289,12 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const localPersistenceDisabled = {
+  getItem: (_key: string): string | null => null,
+  setItem: (_key: string, _value: string): void => undefined,
+  removeItem: (_key: string): void => undefined,
+};
+
 const STORAGE_KEYS = {
   USER: 'restoqr_user_v4',
   OWNER_AUTH: 'restoqr_owner_auth_v4',
@@ -402,7 +408,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // No authenticated user is assumed on a fresh browser.
   const [currentUser, setCurrentUser] = useState<Profile | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.USER) || localStorage.getItem('restoqr_user_v3');
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.USER) || localPersistenceDisabled.getItem('restoqr_user_v3');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -412,7 +418,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Dedicated Owner Session flag (requires secret PIN/Password at /owner)
   const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState<boolean>(() => {
     try {
-      return (localStorage.getItem(STORAGE_KEYS.OWNER_AUTH) || localStorage.getItem('restoqr_owner_auth_v3')) === 'true';
+      return (localPersistenceDisabled.getItem(STORAGE_KEYS.OWNER_AUTH) || localPersistenceDisabled.getItem('restoqr_owner_auth_v3')) === 'true';
     } catch {
       return false;
     }
@@ -421,7 +427,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // SaaS Settings (Table globale 'settings')
   const [saasSettings, setSaasSettings] = useState<SaasSettings>(() => {
     try {
-      const saved = localStorage.getItem('settings') || localStorage.getItem(STORAGE_KEYS.SETTINGS) || localStorage.getItem('restoqr_settings_v4') || localStorage.getItem('restoqr_settings_v3');
+      const saved = localPersistenceDisabled.getItem('settings') || localPersistenceDisabled.getItem(STORAGE_KEYS.SETTINGS) || localPersistenceDisabled.getItem('restoqr_settings_v4') || localPersistenceDisabled.getItem('restoqr_settings_v3');
       if (!saved) return INITIAL_SAAS_SETTINGS;
       const parsed = JSON.parse(saved);
       
@@ -457,14 +463,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // SaaS Branding (synchronisé avec saasSettings.branding)
   const [saasBranding, setSaasBranding] = useState<SaasBranding>(() => {
     try {
-      const savedSettings = localStorage.getItem('settings') || localStorage.getItem(STORAGE_KEYS.SETTINGS) || localStorage.getItem('restoqr_settings_v4');
+      const savedSettings = localPersistenceDisabled.getItem('settings') || localPersistenceDisabled.getItem(STORAGE_KEYS.SETTINGS) || localPersistenceDisabled.getItem('restoqr_settings_v4');
       if (savedSettings) {
         const parsed = JSON.parse(savedSettings);
         if (parsed.branding) {
           return { ...INITIAL_SAAS_BRANDING, ...parsed.branding };
         }
       }
-      const saved = localStorage.getItem(STORAGE_KEYS.BRANDING) || localStorage.getItem('restoqr_branding_v3');
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.BRANDING) || localPersistenceDisabled.getItem('restoqr_branding_v3');
       return saved ? { ...INITIAL_SAAS_BRANDING, ...JSON.parse(saved) } : INITIAL_SAAS_BRANDING;
     } catch {
       return INITIAL_SAAS_BRANDING;
@@ -474,7 +480,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // SaaS Plans
   const [saasPlans, setSaasPlans] = useState<SaasPlan[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.PLANS) || localStorage.getItem('restoqr_plans_v4');
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.PLANS) || localPersistenceDisabled.getItem('restoqr_plans_v4');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].limits) {
@@ -490,7 +496,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Subscriptions
   const [subscriptions, setSubscriptions] = useState<Subscription[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
       return saved ? JSON.parse(saved) : INITIAL_SUBSCRIPTIONS;
     } catch {
       return INITIAL_SUBSCRIPTIONS;
@@ -500,7 +506,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Payment Providers
   const [paymentProviders, setPaymentProviders] = useState<PaymentProviderConfig[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.PAYMENT_PROVIDERS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.PAYMENT_PROVIDERS);
       return saved ? JSON.parse(saved) : INITIAL_PAYMENT_PROVIDERS;
     } catch {
       return INITIAL_PAYMENT_PROVIDERS;
@@ -510,7 +516,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Invoices & Transactions
   const [invoices, setInvoices] = useState<Invoice[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.INVOICES);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.INVOICES);
       return saved ? JSON.parse(saved) : INITIAL_INVOICES;
     } catch {
       return INITIAL_INVOICES;
@@ -520,7 +526,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // SaaS Platform Employees
   const [saasEmployees, setSaasEmployees] = useState<SaasEmployee[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SAAS_EMPLOYEES);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.SAAS_EMPLOYEES);
       return saved ? JSON.parse(saved) : INITIAL_SAAS_EMPLOYEES;
     } catch {
       return INITIAL_SAAS_EMPLOYEES;
@@ -530,7 +536,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Restaurant Tenants
   const [restaurants, setRestaurants] = useState<Restaurant[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.RESTAURANTS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.RESTAURANTS);
       return saved ? JSON.parse(saved) : INITIAL_RESTAURANTS;
     } catch {
       return INITIAL_RESTAURANTS;
@@ -540,7 +546,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Restaurant Staff
   const [restaurantStaff, setRestaurantStaff] = useState<RestaurantStaffMember[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.RESTAURANT_STAFF);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.RESTAURANT_STAFF);
       return saved ? JSON.parse(saved) : INITIAL_RESTAURANT_STAFF;
     } catch {
       return INITIAL_RESTAURANT_STAFF;
@@ -550,7 +556,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Postes Personnalisés
   const [customPositions, setCustomPositions] = useState<CustomStaffPosition[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CUSTOM_POSITIONS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.CUSTOM_POSITIONS);
       return saved ? JSON.parse(saved) : INITIAL_CUSTOM_POSITIONS;
     } catch {
       return INITIAL_CUSTOM_POSITIONS;
@@ -560,7 +566,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Registre de Présence
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.ATTENDANCE_RECORDS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.ATTENDANCE_RECORDS);
       return saved ? JSON.parse(saved) : INITIAL_ATTENDANCE_RECORDS;
     } catch {
       return INITIAL_ATTENDANCE_RECORDS;
@@ -570,7 +576,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Tâches Opérationnelles
   const [operationalTasks, setOperationalTasks] = useState<OperationalTask[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.OPERATIONAL_TASKS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.OPERATIONAL_TASKS);
       return saved ? JSON.parse(saved) : INITIAL_OPERATIONAL_TASKS;
     } catch {
       return INITIAL_OPERATIONAL_TASKS;
@@ -580,7 +586,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Journal d'Activité Restaurant
   const [restaurantActivities, setRestaurantActivities] = useState<RestaurantActivityEvent[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.RESTAURANT_ACTIVITIES);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.RESTAURANT_ACTIVITIES);
       return saved ? JSON.parse(saved) : INITIAL_RESTAURANT_ACTIVITIES;
     } catch {
       return INITIAL_RESTAURANT_ACTIVITIES;
@@ -590,7 +596,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Categories
   const [categories, setCategories] = useState<Category[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.CATEGORIES);
       return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
     } catch {
       return INITIAL_CATEGORIES;
@@ -600,7 +606,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Products
   const [products, setProducts] = useState<Product[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.PRODUCTS);
       return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
     } catch {
       return INITIAL_PRODUCTS;
@@ -610,7 +616,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Tables
   const [tables, setTables] = useState<RestaurantTable[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.TABLES);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.TABLES);
       return saved ? JSON.parse(saved) : INITIAL_TABLES;
     } catch {
       return INITIAL_TABLES;
@@ -620,7 +626,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Orders
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.ORDERS);
       return saved ? JSON.parse(saved) : INITIAL_ORDERS;
     } catch {
       return INITIAL_ORDERS;
@@ -630,7 +636,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.AUDIT_LOGS);
       const rawList: AuditLog[] = saved ? JSON.parse(saved) : INITIAL_AUDIT_LOGS;
       const seenIds = new Set<string>();
       return rawList.map((log, index) => {
@@ -649,7 +655,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Support Tickets
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SUPPORT_TICKETS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.SUPPORT_TICKETS);
       return saved ? JSON.parse(saved) : INITIAL_SUPPORT_TICKETS;
     } catch {
       return INITIAL_SUPPORT_TICKETS;
@@ -659,7 +665,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Reservations
   const [reservations, setReservations] = useState<RestaurantReservation[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
+      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.RESERVATIONS);
       return saved ? JSON.parse(saved) : INITIAL_RESERVATIONS;
     } catch {
       return INITIAL_RESERVATIONS;
@@ -692,97 +698,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, 4000);
   }, []);
 
-  // Keep admin tabs synchronized when a restaurant registers in another tab.
-  useEffect(() => {
-    const syncRestaurants = (event: StorageEvent) => {
-      if (event.key !== STORAGE_KEYS.RESTAURANTS || !event.newValue) return;
-      try {
-        setRestaurants(JSON.parse(event.newValue));
-      } catch {
-        // Ignore malformed external storage updates.
-      }
-    };
-    window.addEventListener('storage', syncRestaurants);
-    return () => window.removeEventListener('storage', syncRestaurants);
-  }, []);
-
   // Supabase is the shared source for restaurant registrations across devices.
   useEffect(() => {
     if (!supabase) return;
     let cancelled = false;
     void supabase.from('restaurants').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
-      if (cancelled || error || !data?.length) return;
+      if (cancelled) return;
+      if (error) {
+        showToast('Impossible de charger les restaurants depuis Supabase.', 'error');
+        return;
+      }
+      if (!data) return;
       setRestaurants(current => {
         const remoteById = new Map((data as Restaurant[]).map(restaurant => [restaurant.id, restaurant]));
-        const localOnly = current.filter(restaurant => !remoteById.has(restaurant.id));
-        return [...(data as Restaurant[]), ...localOnly];
+        return data as Restaurant[];
       });
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [showToast]);
 
-  // Save changes to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
-      localStorage.setItem(STORAGE_KEYS.OWNER_AUTH, isOwnerAuthenticated ? 'true' : 'false');
-      localStorage.setItem(STORAGE_KEYS.BRANDING, JSON.stringify(saasBranding));
-
-      // Stockage unifié dans la table globale 'settings'
-      const globalSettingsWithBranding: SaasSettings = {
-        ...saasSettings,
-        branding: saasBranding,
-        last_updated_at: new Date().toISOString()
-      };
-      localStorage.setItem('settings', JSON.stringify(globalSettingsWithBranding));
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(globalSettingsWithBranding));
-      localStorage.setItem(STORAGE_KEYS.SETTINGS_V4, JSON.stringify(globalSettingsWithBranding));
-
-      localStorage.setItem(STORAGE_KEYS.PLANS, JSON.stringify(saasPlans));
-      localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(subscriptions));
-      localStorage.setItem(STORAGE_KEYS.PAYMENT_PROVIDERS, JSON.stringify(paymentProviders));
-      localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
-      localStorage.setItem(STORAGE_KEYS.SAAS_EMPLOYEES, JSON.stringify(saasEmployees));
-      localStorage.setItem(STORAGE_KEYS.RESTAURANT_STAFF, JSON.stringify(restaurantStaff));
-      localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(restaurants));
-      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-      localStorage.setItem(STORAGE_KEYS.TABLES, JSON.stringify(tables));
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-      localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs));
-      localStorage.setItem(STORAGE_KEYS.SUPPORT_TICKETS, JSON.stringify(supportTickets));
-      localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(reservations));
-      localStorage.setItem(STORAGE_KEYS.CUSTOM_POSITIONS, JSON.stringify(customPositions));
-      localStorage.setItem(STORAGE_KEYS.ATTENDANCE_RECORDS, JSON.stringify(attendanceRecords));
-      localStorage.setItem(STORAGE_KEYS.OPERATIONAL_TASKS, JSON.stringify(operationalTasks));
-      localStorage.setItem(STORAGE_KEYS.RESTAURANT_ACTIVITIES, JSON.stringify(restaurantActivities));
-    } catch (e) {
-      console.warn('LocalStorage save warning:', e);
-    }
-  }, [
-    currentUser,
-    isOwnerAuthenticated,
-    saasBranding,
-    saasSettings,
-    saasPlans,
-    subscriptions,
-    paymentProviders,
-    invoices,
-    saasEmployees,
-    restaurantStaff,
-    restaurants,
-    categories,
-    products,
-    tables,
-    orders,
-    auditLogs,
-    supportTickets,
-    reservations,
-    customPositions,
-    attendanceRecords,
-    operationalTasks,
-    restaurantActivities
-  ]);
+  // Supabase is the only persistence layer. Local browser storage is intentionally unused.
 
   // Active restaurant for dashboard management
   const activeRestaurant = React.useMemo(() => {
@@ -792,6 +727,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     return restaurants[0] || null;
   }, [currentUser, restaurants]);
+
+  // Shared restaurant data is loaded from Supabase and mirrored back after local changes.
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    const entityTypes = ['category', 'product', 'table', 'order', 'staff', 'reservation'] as const;
+    void supabase.from('restaurant_app_data').select('restaurant_id, entity_type, entity_id, payload').then(({ data, error }) => {
+      if (cancelled || error || !data) return;
+      const rows = data as Array<{ restaurant_id: string; entity_type: string; entity_id: string; payload: unknown }>;
+      const read = (type: string) => rows.filter(row => row.entity_type === type).map(row => row.payload);
+      const merge = <T extends { id: string; restaurant_id?: string }>(local: T[], remote: unknown[]) => {
+        const remoteItems = remote.filter((item): item is T => Boolean(item && typeof item === 'object' && 'id' in item));
+        const remoteIds = new Set(remoteItems.map(item => item.id));
+        return [...remoteItems, ...local.filter(item => !remoteIds.has(item.id))];
+      };
+      setCategories(current => merge(current, read('category')));
+      setProducts(current => merge(current, read('product')));
+      setTables(current => merge(current, read('table')));
+      setOrders(current => merge(current, read('order')));
+      setRestaurantStaff(current => merge(current, read('staff')));
+      setReservations(current => merge(current, read('reservation')));
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const collections: Array<[string, Array<{ id: string; restaurant_id?: string }>]> = [
+      ['category', categories], ['product', products], ['table', tables], ['order', orders], ['staff', restaurantStaff], ['reservation', reservations],
+    ];
+    const rows = collections.flatMap(([entity_type, items]) => items.filter(item => item.restaurant_id).map(item => ({
+      restaurant_id: item.restaurant_id as string,
+      entity_type,
+      entity_id: item.id,
+      payload: item,
+    })));
+    if (rows.length > 0) void supabase.from('restaurant_app_data').upsert(rows, { onConflict: 'restaurant_id,entity_type,entity_id' });
+  }, [categories, products, tables, orders, restaurantStaff, reservations]);
 
   const setActiveRestaurantId = useCallback((id: string) => {
     const resto = restaurants.find(r => r.id === id);
@@ -892,8 +865,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
       setCurrentUser(ownerProfile);
       try {
-        localStorage.setItem(STORAGE_KEYS.OWNER_AUTH, 'true');
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(ownerProfile));
+        localPersistenceDisabled.setItem(STORAGE_KEYS.OWNER_AUTH, 'true');
+        localPersistenceDisabled.setItem(STORAGE_KEYS.USER, JSON.stringify(ownerProfile));
       } catch (err) {
         console.warn('Storage sync error:', err);
       }
@@ -955,8 +928,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         owner_email: (newEmail && newEmail.trim()) ? newEmail.trim() : (prev.owner_email || 'dalpahayaya249@gmail.com')
       };
       try {
-        localStorage.setItem('settings', JSON.stringify(updated));
-        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
+        localPersistenceDisabled.setItem('settings', JSON.stringify(updated));
+        localPersistenceDisabled.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
       } catch (e) {
         console.error('Erreur sauvegarde credentials owner:', e);
       }
@@ -1025,8 +998,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userToSet.email = 'dalpahayaya249@gmail.com';
       setIsOwnerAuthenticated(true);
       try {
-        localStorage.setItem(STORAGE_KEYS.OWNER_AUTH, 'true');
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userToSet));
+        localPersistenceDisabled.setItem(STORAGE_KEYS.OWNER_AUTH, 'true');
+        localPersistenceDisabled.setItem(STORAGE_KEYS.USER, JSON.stringify(userToSet));
       } catch (e) {
         console.warn('LocalStorage error:', e);
       }
@@ -1173,10 +1146,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           last_updated_at: new Date().toISOString()
         };
         try {
-          localStorage.setItem('settings', JSON.stringify(nextSettings));
-          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(nextSettings));
-          localStorage.setItem(STORAGE_KEYS.SETTINGS_V4, JSON.stringify(nextSettings));
-          localStorage.setItem(STORAGE_KEYS.BRANDING, JSON.stringify(nextBranding));
+          localPersistenceDisabled.setItem('settings', JSON.stringify(nextSettings));
+          localPersistenceDisabled.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(nextSettings));
+          localPersistenceDisabled.setItem(STORAGE_KEYS.SETTINGS_V4, JSON.stringify(nextSettings));
+          localPersistenceDisabled.setItem(STORAGE_KEYS.BRANDING, JSON.stringify(nextBranding));
         } catch (err) {
           console.warn('Erreur synchronisation table settings:', err);
         }
@@ -2848,7 +2821,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateTable = useCallback((id: string, name: string, isActive: boolean) => {
     setTables(prev => prev.map(t => t.id === id ? { ...t, name, is_active: isActive } : t));
-    showToast('Table mise à jour', 'success');
+    showToast('Table mise �� jour', 'success');
   }, [showToast]);
 
   const deleteTable = useCallback((id: string) => {
@@ -3286,15 +3259,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Simulated Domain
   const [simulatedDomain, setSimulatedDomainState] = useState<string | null>(() => {
-    return localStorage.getItem('restoqr_simulated_domain_v4') || null;
+    return localPersistenceDisabled.getItem('restoqr_simulated_domain_v4') || null;
   });
 
   const setSimulatedDomain = useCallback((domain: string | null) => {
     setSimulatedDomainState(domain);
     if (domain) {
-      localStorage.setItem('restoqr_simulated_domain_v4', domain);
+      localPersistenceDisabled.setItem('restoqr_simulated_domain_v4', domain);
     } else {
-      localStorage.removeItem('restoqr_simulated_domain_v4');
+      localPersistenceDisabled.removeItem('restoqr_simulated_domain_v4');
     }
   }, []);
 
@@ -3581,7 +3554,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Clear only seeded orders so the Super Admin revenue starts at zero without resetting accounts or restaurant setup.
   const resetToDemoData = useCallback(() => {
   setOrders([]);
-  localStorage.removeItem(STORAGE_KEYS.ORDERS);
+  localPersistenceDisabled.removeItem(STORAGE_KEYS.ORDERS);
   showToast('Chiffre d’affaires remis à zéro. Les prochaines commandes seront réelles.', 'success');
   }, [showToast]);
 
