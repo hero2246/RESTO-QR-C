@@ -702,19 +702,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!supabase) return;
     let cancelled = false;
-    void supabase.from('restaurants').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+    const loadRestaurants = async () => {
+      const { data, error } = await supabase.from('restaurants').select('*').order('created_at', { ascending: false });
       if (cancelled) return;
       if (error) {
-        showToast('Impossible de charger les restaurants depuis Supabase.', 'error');
+        showToast(`Impossible de charger les restaurants : ${error.message}`, 'error');
         return;
       }
-      if (!data) return;
-      setRestaurants(current => {
-        const remoteById = new Map((data as Restaurant[]).map(restaurant => [restaurant.id, restaurant]));
-        return data as Restaurant[];
-      });
-    });
-    return () => { cancelled = true; };
+      if (data) setRestaurants(data as Restaurant[]);
+    };
+    void loadRestaurants();
+    const interval = window.setInterval(() => void loadRestaurants(), 5000);
+    return () => { cancelled = true; window.clearInterval(interval); };
   }, [showToast]);
 
   // Supabase is the only persistence layer. Local browser storage is intentionally unused.
@@ -1954,7 +1953,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser, addAuditLog]);
 
   // Restaurant Tenants Management
-  const registerRestaurant = useCallback((data: {
+  const registerRestaurant = useCallback(async (data: {
     name: string;
     owner_name: string;
     email: string;
@@ -1964,7 +1963,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     city: string;
     country: string;
     plan_id?: 'FREE' | 'PRO' | 'PREMIUM';
-  }): Restaurant => {
+  }): Promise<Restaurant> => {
     const slug = data.name
       .toLowerCase()
       .normalize('NFD')
@@ -2028,10 +2027,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Add to collections
     setRestaurants(prev => [newResto, ...prev]);
-    if (supabase) {
-      void supabase.from('restaurants').upsert(newResto).then(({ error }) => {
-        if (error) showToast('Inscription locale enregistrée, mais synchronisation Supabase impossible.', 'error');
-      });
+    if (!supabase) {
+      showToast('Supabase n’est pas configuré. Inscription impossible.', 'error');
+      throw new Error('Supabase is not configured');
+    }
+    const { error: restaurantError } = await supabase.from('restaurants').upsert(newResto, { onConflict: 'id' });
+    if (restaurantError) {
+      showToast(`Inscription non enregistrée : ${restaurantError.message}`, 'error');
+      throw restaurantError;
     }
     setCategories(prev => [...prev, ...defaultCategories]);
     setProducts(prev => [...prev, ...defaultProducts]);
