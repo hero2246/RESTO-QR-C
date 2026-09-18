@@ -34,6 +34,30 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResto, setEditingResto] = useState<Restaurant | null>(null);
+  const [approvingRestaurantId, setApprovingRestaurantId] = useState<string | null>(null);
+
+  const handleApproveRestaurant = async (restaurant: Restaurant) => {
+    setApprovingRestaurantId(restaurant.id);
+    try {
+      const response = await fetch('/api/send-approval-email', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          to: restaurant.email,
+          ownerName: restaurant.owner_name,
+          restaurantName: restaurant.name,
+          loginUrl: `${window.location.origin}/login`,
+        }),
+      });
+      if (!response.ok) throw new Error('email');
+      updateRestaurant(restaurant.id, { status: 'ACTIVE' });
+      showToast('Restaurant approuvé. Email envoyé au propriétaire.', 'success');
+    } catch {
+      showToast('Email non envoyé. Vérifiez la clé Brevo avant d’approuver.', 'error');
+    } finally {
+      setApprovingRestaurantId(null);
+    }
+  };
 
   // Form inputs
   const [name, setName] = useState('');
@@ -245,15 +269,14 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
                 {/* Footer buttons */}
                   <div className="p-4 pt-3 border-t border-stone-100 bg-stone-50 flex items-center justify-between gap-2">
                   {resto.status === 'PENDING' && (
-                    <a
-                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(resto.email)}&su=${encodeURIComponent('Votre restaurant est approuvé')}&body=${encodeURIComponent(`Bonjour ${resto.owner_name},%0A%0AVotre restaurant ${resto.name} a été approuvé par le Super Admin.%0A%0AVous pouvez vous connecter ici : ${window.location.origin}/login%0A%0ACordialement, RESTO QR`)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={() => updateRestaurant(resto.id, { status: 'ACTIVE' })}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition"
+                    <button
+                      type="button"
+                      disabled={approvingRestaurantId === resto.id}
+                      onClick={() => void handleApproveRestaurant(resto)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold transition"
                     >
-                      Approuver & envoyer le lien
-                    </a>
+                      {approvingRestaurantId === resto.id ? 'Envoi...' : 'Approuver & envoyer le lien'}
+                    </button>
                   )}
                   <button
                     onClick={() => handleManageAsRestaurant(resto)}
