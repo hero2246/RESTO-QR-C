@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   QrCode, 
@@ -15,8 +15,6 @@ import {
   Flame,
   CheckCircle2
 } from 'lucide-react';
-import { SecretOwnerAccessModal } from '../components/owner/SecretOwnerAccessModal';
-import { OfficialOwnerEmailModal } from '../components/owner/OfficialOwnerEmailModal';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 interface AuthPageProps {
@@ -31,7 +29,7 @@ export type LoginRoleTab =
   | 'STAFF_CASHIER';
 
 export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
-  const { login, restaurants, setActiveRestaurant, restaurantStaff, saasSettings, unlockOwnerSession } = useApp();
+  const { login, restaurants, setActiveRestaurant, restaurantStaff } = useApp();
   
   const [selectedRole, setSelectedRole] = useState<LoginRoleTab>('STAFF_WAITER');
   const [email, setEmail] = useState('');
@@ -39,41 +37,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
   const [restaurantId, setRestaurantId] = useState(restaurants[0]?.id || 'resto-alpha');
   const [error, setError] = useState<string | null>(null);
 
-  // Stealth Owner Modal & Official Email Modal
-  const [isSecretOwnerModalOpen, setIsSecretOwnerModalOpen] = useState(false);
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  const [secretKnockCount, setSecretKnockCount] = useState(0);
-
-  // Global stealth keyboard listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) ||
-        (e.altKey && e.shiftKey && (e.key === 'O' || e.key === 'o')) ||
-        (e.metaKey && e.shiftKey && (e.key === 'O' || e.key === 'o'))
-      ) {
-        e.preventDefault();
-        setIsSecretOwnerModalOpen(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleLogoKnock = () => {
-    setSecretKnockCount(prev => {
-      const next = prev + 1;
-      if (next >= 3) {
-        setIsSecretOwnerModalOpen(true);
-        return 0;
-      }
-      return next;
-    });
-
-    setTimeout(() => {
-      setSecretKnockCount(0);
-    }, 2500);
-  };
 
   const handleRoleTabChange = (newRole: LoginRoleTab) => {
     setSelectedRole(newRole);
@@ -106,32 +69,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
       setError('Service de connexion temporairement indisponible. Réessayez dans un instant.');
       return;
     }
-    const isOwnerEmail = cleanEmail === 'dalpahayaya249@gmail.com' || 
-      cleanEmail === 'dalphayay249@gmail.com' || 
-      cleanEmail.includes('dalpahayaya') || 
-      cleanEmail.includes('dalphayay') || 
-      cleanEmail === (saasSettings.owner_email || '').toLowerCase();
-
-    // If the Super Admin owner logs in from here, redirect directly to the owner console
-    if (isOwnerEmail) {
-      const cleanInputPassword = password.trim();
-      const validMasterPwd = saasSettings.owner_password || 'Alphayayadiallo@12';
-      if (
-        cleanInputPassword === validMasterPwd || 
-        cleanInputPassword.toLowerCase() === validMasterPwd.toLowerCase() ||
-        cleanInputPassword === 'Alphayayadiallo@12' || 
-        cleanInputPassword.toLowerCase() === 'alphayayadiallo@12' || 
-        cleanInputPassword === 'SuperSecretOwnerPassword2026!'
-      ) {
-        unlockOwnerSession('Alphayayadiallo@12', undefined, cleanEmail);
-        navigate('/owner/dashboard');
-        return;
-      } else {
-        setError('Mot de passe Super Admin incorrect. Veuillez renseigner le mot de passe maître officiel (Alphayayadiallo@12).');
-        return;
-      }
-    }
-
     const chosenResto = restaurants.find(r => r.id === restaurantId) || restaurants[0];
     if (chosenResto) setActiveRestaurant(chosenResto);
 
@@ -170,7 +107,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
         <div className="text-center space-y-2">
           <button
             type="button"
-            onClick={handleLogoKnock}
             className="w-12 h-12 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white flex items-center justify-center mx-auto shadow-md shadow-orange-500/20 active:scale-95 transition-transform"
             title="Connexion Restaurant RESTO QR"
           >
@@ -463,47 +399,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
           </button>
           
           <div className="flex items-center gap-3">
-            {/* Direct Super Admin official confirmation email button */}
-            <button
-              type="button"
-              onClick={() => setIsEmailModalOpen(true)}
+            <a
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=support@resto-qr.com&su=Réclamation%20ou%20demande%20d%27assistance&body=Bonjour%2C%0A%0AJe%20souhaite%20signaler%20le%20problème%20suivant%20%3A%0A%0A"
               className="text-stone-400 hover:text-orange-600 transition text-[11px] flex items-center gap-1 font-medium"
-              title="Consulter le courriel officiel de confirmation Super Admin"
+              title="Contacter le support par Gmail"
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Courriel Officiel Super Admin</span>
-            </button>
-
-            {/* Subtle camouflage dot for the owner */}
-            <button
-              type="button"
-              onClick={() => setIsSecretOwnerModalOpen(true)}
-              className="text-stone-300 hover:text-stone-400 transition text-sm font-bold"
-              title="Accès Technique Sécurisé"
-            >
-              •
-            </button>
+              <span>Contacter le support</span>
+            </a>
           </div>
         </div>
 
       </div>
-
-      {/* Secret Stealth Owner Modal */}
-      <SecretOwnerAccessModal
-        isOpen={isSecretOwnerModalOpen}
-        onClose={() => setIsSecretOwnerModalOpen(false)}
-        navigate={navigate}
-      />
-
-      {/* Official Owner Confirmation Email Modal */}
-      <OfficialOwnerEmailModal
-        isOpen={isEmailModalOpen}
-        onClose={() => setIsEmailModalOpen(false)}
-        onApplyAndLogin={() => {
-          unlockOwnerSession('Alphayayadiallo@12', '789456', 'dalpahayaya249@gmail.com');
-          navigate('/owner/dashboard');
-        }}
-      />
 
     </div>
   );
