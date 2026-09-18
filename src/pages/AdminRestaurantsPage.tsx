@@ -23,7 +23,8 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
     restaurants, 
     orders, 
     addRestaurant, 
-    updateRestaurant, 
+    updateRestaurant,
+    setRestaurantStatus, 
     toggleRestaurantStatus, 
     deleteRestaurant,
     setActiveRestaurant,
@@ -39,7 +40,7 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
   const handleApproveRestaurant = async (restaurant: Restaurant) => {
     setApprovingRestaurantId(restaurant.id);
     try {
-      const saved = await updateRestaurant(restaurant.id, { status: 'ACTIVE' });
+      const saved = await setRestaurantStatus(restaurant.id, 'ACTIVE');
       if (!saved) throw new Error('database');
       const response = await fetch('/api/send-approval-email', {
         method: 'POST',
@@ -52,7 +53,8 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
         }),
       });
       if (!response.ok) {
-        showToast('Restaurant approuvé, mais l’email n’a pas pu être envoyé.', 'error');
+        const emailError = await response.json().catch(() => null) as { error?: string } | null;
+        showToast(`Restaurant approuvé, email non envoyé : ${emailError?.error || response.statusText}`, 'error');
         return;
       }
       showToast('Restaurant approuvé et email envoyé au propriétaire.', 'success');
