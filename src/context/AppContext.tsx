@@ -956,6 +956,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     staffRole?: StaffRoleType,
     customPermissions?: string[]
   ): Promise<boolean> => {
+    const linkedRestaurant = restaurantId ? restaurants.find(restaurant => restaurant.id === restaurantId) : undefined;
+    if (linkedRestaurant && linkedRestaurant.status !== 'ACTIVE') {
+      showToast('Ce restaurant est en attente d’approbation du Super Admin.', 'error');
+      return false;
+    }
+
     const existing = INITIAL_PROFILES.find(p => p.email.toLowerCase() === email.toLowerCase());
     
     let userToSet: Profile;
@@ -1979,8 +1985,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       cover_image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&auto=format&fit=crop&q=80',
       primary_color: '#ea580c',
       secondary_color: '#0f172a',
-      status: 'ACTIVE',
-      plan_id: data.plan_id || 'FREE',
+  status: 'PENDING',
+  plan_id: data.plan_id || 'FREE',
       created_at: new Date().toISOString(),
       hours: 'Lun - Dim : 11h30 - 23h00',
     };

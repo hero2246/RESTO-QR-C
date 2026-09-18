@@ -40,7 +40,7 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
       });
 
       setIsSubmitting(false);
-      navigate('/restaurant/dashboard');
+      navigate('/login?pending=1');
     }, 400);
   };
 
@@ -252,6 +252,10 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
             </div>
 
             {/* Submit */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+              Votre demande sera examinée par le Super Admin. Le restaurant restera inactif jusqu’à son approbation. Après validation, vous recevrez un lien de connexion par email.
+            </div>
+
             <div className="pt-4">
               <button
                 type="submit"
