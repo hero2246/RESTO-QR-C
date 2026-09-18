@@ -43,6 +43,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
       const params = new URLSearchParams(window.location.search);
       const confirmed = params.get('confirmed') === '1' || params.get('type') === 'signup';
       const pending = params.get('pending') === '1';
+      const emailSent = params.get('email_sent') === '1';
       const code = params.get('code');
 
       if (code && supabase) {
@@ -56,8 +57,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
       if (!cancelled && (confirmed || code || window.location.hash.includes('access_token'))) {
         setConfirmationMessage('Votre compte est confirmé. Vous pouvez maintenant vous connecter.');
         window.history.replaceState({}, '', '/login');
-      } else if (!cancelled && pending) {
-        setConfirmationMessage('Restaurant créé. Consultez votre boîte mail et confirmez votre adresse avant de vous connecter.');
+      } else if (!cancelled && (pending || emailSent)) {
+        setConfirmationMessage('Restaurant créé. L’email de confirmation a été envoyé. Consultez votre boîte mail et confirmez votre adresse avant de vous connecter.');
         window.history.replaceState({}, '', '/login');
       }
     };

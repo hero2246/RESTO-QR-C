@@ -37,7 +37,7 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
         country,
         plan_id: selectedPlan,
       });
-      navigate('/login?pending=1');
+      navigate('/login?pending=1&email_sent=1');
     } catch {
       // The context displays the Supabase error and keeps the form available for retry.
     } finally {
