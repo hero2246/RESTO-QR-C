@@ -3,7 +3,6 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { LandingHeader } from './components/LandingHeader';
 import { Toast } from './components/Toast';
-import { RestaurantTeamChat } from './components/RestaurantTeamChat';
 
 // Public & Restaurant Pages
 import { LandingPage } from './pages/LandingPage';
@@ -300,7 +299,6 @@ function AppContent({
 
   const isOwnerPath = currentPath.startsWith('/owner');
   const isPublicAuthPath = currentPath === '/register' || currentPath === '/register/' || currentPath === '/login' || currentPath === '/login/';
-  const isRestaurantWorkspace = currentPath.startsWith('/dashboard') || currentPath.startsWith('/restaurant/');
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900 flex flex-col selection:bg-orange-500 selection:text-white">
@@ -311,7 +309,6 @@ function AppContent({
         {renderRoute()}
       </main>
 
-      {isRestaurantWorkspace && currentUser?.restaurant_id && <RestaurantTeamChat />}
       <Toast />
     </div>
   );
