@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { LandingHeader } from './components/LandingHeader';
@@ -337,6 +338,7 @@ export default function App() {
   return (
     <AppProvider>
       <AppContent currentPath={currentPath} navigate={navigate} />
+      <Analytics />
     </AppProvider>
   );
 }
