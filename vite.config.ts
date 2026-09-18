@@ -7,7 +7,7 @@ export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
     // Expose the existing Vercel Supabase variables to the Vite client bundle.
-    envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
+    envPrefix: ['VITE_'],
     build: {
       chunkSizeWarningLimit: 1100,
       rollupOptions: {
