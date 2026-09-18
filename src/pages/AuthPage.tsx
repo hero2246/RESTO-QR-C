@@ -15,7 +15,7 @@ import {
   Flame,
   CheckCircle2
 } from 'lucide-react';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getSupabaseConfigurationError, supabase } from '../lib/supabase';
 
 interface AuthPageProps {
   navigate: (path: string) => void;
@@ -50,8 +50,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password;
 
-    if (!isSupabaseConfigured() || !supabase) {
-      setError('Le service de connexion sécurisé n’est pas configuré.');
+    const configurationError = getSupabaseConfigurationError();
+    if (configurationError || !supabase) {
+      setError(configurationError ?? 'Le service Supabase est indisponible.');
       return;
     }
 
@@ -62,11 +63,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
       });
 
       if (authError) {
-        setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.');
+        const message = authError.message.toLowerCase();
+        if (message.includes('email not confirmed')) {
+          setError('Votre email n’est pas encore confirmé. Consultez votre boîte mail.');
+        } else if (message.includes('invalid login credentials')) {
+          setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.');
+        } else if (message.includes('fetch') || message.includes('network')) {
+          setError('Supabase est inaccessible. Vérifiez l’URL et la connexion réseau.');
+        } else {
+          setError(`Erreur Supabase : ${authError.message}`);
+        }
         return;
       }
-    } catch {
-      setError('Service de connexion temporairement indisponible. Réessayez dans un instant.');
+    } catch (caughtError) {
+      setError('Supabase est inaccessible. Vérifiez la configuration et réessayez.');
       return;
     }
     const chosenResto = restaurants.find(r => r.id === restaurantId) || restaurants[0];
