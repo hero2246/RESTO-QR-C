@@ -2133,21 +2133,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return true;
   }, [currentUser, addAuditLog, showToast]);
 
-  const setRestaurantStatus = useCallback((id: string, status: RestaurantStatus) => {
-    if (currentUser?.role !== 'OWNER' && !hasPermission('saas.restaurants.manage')) {
-      showToast('Action réservée au Super Admin de la plateforme', 'error');
-      return;
-    }
-    setRestaurants(prev => prev.map(r => {
-      if (r.id === id) {
-        if (supabase) void supabase.from('restaurants').update({ status }).eq('id', id);
-        addAuditLog('MODIFICATION_STATUT_RESTAURANT', 'RESTAURANT', r.name, `Statut changé en: ${status}`);
-        return { ...r, status };
-      }
-      return r;
-    }));
-    showToast(`Statut du restaurant modifié : ${status}`, 'info');
-  }, [currentUser, hasPermission, addAuditLog, showToast]);
+  const setRestaurantStatus = useCallback(async (id: string, status: RestaurantStatus): Promise<boolean> => {
+  if (currentUser?.role !== 'OWNER' && !hasPermission('saas.restaurants.manage')) {
+  showToast('Action réservée au Super Admin de la plateforme', 'error');
+  return false;
+  }
+  if (!supabase) {
+  showToast('Supabase n’est pas configuré.', 'error');
+  return false;
+  }
+  const { error } = await supabase.from('restaurants').update({ status }).eq('id', id);
+  if (error) {
+  showToast(`Statut non enregistré : ${error.message}`, 'error');
+  return false;
+  }
+  const { data: saved } = await supabase.from('restaurants').select('status').eq('id', id).maybeSingle();
+  if (saved?.status !== status) {
+  showToast('Le statut n’a pas été confirmé par Supabase.', 'error');
+  return false;
+  }
+  setRestaurants(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+  const restaurant = restaurants.find(r => r.id === id);
+  addAuditLog('MODIFICATION_STATUT_RESTAURANT', 'RESTAURANT', restaurant?.name || id, `Statut changé en: ${status}`);
+  showToast(`Statut du restaurant modifié : ${status}`, 'info');
+  return true;
+  }, [currentUser, hasPermission, restaurants, addAuditLog, showToast]);
 
   const setRestaurantPlan = useCallback((id: string, planId: 'FREE' | 'PRO' | 'PREMIUM') => {
     if (currentUser?.role !== 'OWNER') {
