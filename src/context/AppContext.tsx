@@ -3541,23 +3541,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return results;
   }, [restaurants]);
 
-  // Reset demo data, including the Super Admin sales dashboard.
+  // Clear only seeded orders so the Super Admin revenue starts at zero without resetting accounts or restaurant setup.
   const resetToDemoData = useCallback(() => {
-    localStorage.clear();
-    setCurrentUser(INITIAL_PROFILES[2]);
-    setIsOwnerAuthenticated(false);
-    setSaasBranding(INITIAL_SAAS_BRANDING);
-    setSaasSettings(INITIAL_SAAS_SETTINGS);
-    setSaasPlans(INITIAL_SAAS_PLANS);
-    setSaasEmployees(INITIAL_SAAS_EMPLOYEES);
-    setRestaurants(INITIAL_RESTAURANTS);
-    setRestaurantStaff(INITIAL_RESTAURANT_STAFF);
-    setCategories(INITIAL_CATEGORIES);
-    setProducts(INITIAL_PRODUCTS);
-    setTables(INITIAL_TABLES);
-    setOrders([]);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
-    showToast('Données de démonstration réinitialisées avec succès', 'info');
+  setOrders([]);
+  localStorage.removeItem(STORAGE_KEYS.ORDERS);
+  showToast('Chiffre d’affaires remis à zéro. Les prochaines commandes seront réelles.', 'success');
   }, [showToast]);
 
   return (

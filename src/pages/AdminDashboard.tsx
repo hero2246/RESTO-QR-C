@@ -24,7 +24,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ navigate }) => {
 
   const handleResetDemoData = () => {
     const confirmed = window.confirm(
-      'Réinitialiser toutes les données de démonstration ? Les modifications locales seront supprimées.'
+      'Mettre le chiffre d’affaires à zéro ? Les commandes de démonstration seront supprimées, mais les comptes et réglages seront conservés.'
     );
     if (confirmed) resetToDemoData();
   };
@@ -65,7 +65,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ navigate }) => {
               title="Remettre le chiffre d’affaires de démonstration à zéro"
             >
               <RotateCcw className="w-4 h-4" />
-              <span>Réinitialiser le chiffre d’affaires</span>
+              <span>Passer au réel · CA à zéro</span>
             </button>
             <button
               onClick={() => navigate('/admin/restaurants')}
