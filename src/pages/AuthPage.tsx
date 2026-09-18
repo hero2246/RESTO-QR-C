@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { SecretOwnerAccessModal } from '../components/owner/SecretOwnerAccessModal';
 import { OfficialOwnerEmailModal } from '../components/owner/OfficialOwnerEmailModal';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 interface AuthPageProps {
   navigate: (path: string) => void;
@@ -79,11 +80,32 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
     setError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password;
+
+    if (!isSupabaseConfigured() || !supabase) {
+      setError('Le service de connexion sécurisé n’est pas configuré.');
+      return;
+    }
+
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: cleanPassword,
+      });
+
+      if (authError) {
+        setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.');
+        return;
+      }
+    } catch {
+      setError('Service de connexion temporairement indisponible. Réessayez dans un instant.');
+      return;
+    }
     const isOwnerEmail = cleanEmail === 'dalpahayaya249@gmail.com' || 
       cleanEmail === 'dalphayay249@gmail.com' || 
       cleanEmail.includes('dalpahayaya') || 
