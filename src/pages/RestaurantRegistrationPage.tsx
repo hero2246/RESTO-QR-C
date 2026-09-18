@@ -254,7 +254,7 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
 
             {/* Submit */}
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-              Votre demande sera examinée par le Super Admin. Le restaurant restera inactif jusqu’à son approbation. Après validation, vous recevrez un lien de connexion par email.
+              Après la création, un email de confirmation sera envoyé à votre adresse. Confirmez-la pour activer votre compte, puis attendez l’approbation du Super Admin.
             </div>
 
             <div className="pt-4">
