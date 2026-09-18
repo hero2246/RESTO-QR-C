@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   QrCode, 
@@ -35,7 +35,36 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    const handleEmailConfirmation = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const confirmed = params.get('confirmed') === '1' || params.get('type') === 'signup';
+      const pending = params.get('pending') === '1';
+      const emailSent = params.get('email_sent') === '1';
+      const code = params.get('code');
+
+      if (code && supabase) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError && !cancelled) {
+          setError('Le lien de confirmation est invalide ou expiré. Demandez un nouvel email.');
+          return;
+        }
+      }
+
+      if (!cancelled && (confirmed || code || window.location.hash.includes('access_token'))) {
+        setConfirmationMessage('Votre compte est confirmé. Vous pouvez maintenant vous connecter.');
+        window.history.replaceState({}, '', '/login');
+      } else if (!cancelled && (pending || emailSent)) {
+        setConfirmationMessage('Restaurant créé. L’email de confirmation a été envoyé. Consultez votre boîte mail et confirmez votre adresse avant de vous connecter.');
+        window.history.replaceState({}, '', '/login');
+      }
+    };
+    void handleEmailConfirmation();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleRoleTabChange = (newRole: LoginRoleTab) => {
     setSelectedRole(newRole);
@@ -335,12 +364,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
         {/* Standard credentials form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {error && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 shrink-0 text-red-600" />
-              <span>{error}</span>
-            </div>
-          )}
+  {confirmationMessage && (
+  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2" role="status">
+  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+  <span>{confirmationMessage}</span>
+  </div>
+  )}
+  {error && (
+  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2" role="alert">
+  <ShieldAlert className="w-4 h-4 shrink-0 text-red-600" />
+  <span>{error}</span>
+  </div>
+  )}
+  
 
   <div className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-xs text-orange-800">
   Votre email détermine automatiquement le restaurant et les droits associés à votre compte.

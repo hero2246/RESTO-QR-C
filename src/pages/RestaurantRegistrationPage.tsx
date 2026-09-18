@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Store, ArrowRight, ShieldCheck, Check, Sparkles } from 'lucide-react';
 
@@ -8,6 +8,8 @@ interface RestaurantRegistrationPageProps {
 
 export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProps> = ({ navigate }) => {
   const { registerRestaurant, saasBranding, saasPlans } = useApp();
+  const proPlan = saasPlans.find(plan => plan.id === 'PRO');
+  const isProAvailable = proPlan?.is_active === true;
 
   const [restaurantName, setRestaurantName] = useState('');
   const [ownerName, setOwnerName] = useState('');
@@ -17,8 +19,12 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('Dakar');
   const [country, setCountry] = useState('Sénégal');
-  const [selectedPlan, setSelectedPlan] = useState<'FREE' | 'PRO'>('PRO');
+  const [selectedPlan, setSelectedPlan] = useState<'FREE' | 'PRO'>('FREE');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isProAvailable && selectedPlan === 'PRO') setSelectedPlan('FREE');
+  }, [isProAvailable, selectedPlan]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +43,7 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
         country,
         plan_id: selectedPlan,
       });
-      navigate('/login?pending=1');
+      navigate('/login?pending=1&email_sent=1');
     } catch {
       // The context displays the Supabase error and keeps the form available for retry.
     } finally {
@@ -229,8 +235,8 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
                   </p>
                 </div>
 
-                {/* Pro */}
-                <div
+                {/* Pro: visible only after Super Admin activation */}
+                {isProAvailable && <div
                   onClick={() => setSelectedPlan('PRO')}
                   className={`p-4 rounded-2xl border cursor-pointer transition space-y-2 relative ${
                     selectedPlan === 'PRO'
@@ -248,13 +254,19 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
                   <p className="text-[11px] text-stone-500">
                     Commandes illimitées, écran cuisine Kanban en direct, multi-serveurs.
                   </p>
-                </div>
+                </div>}
               </div>
             </div>
 
+            {!isProAvailable && (
+              <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600">
+                Offre Découverte disponible. Les restaurants seront informés dès que l’offre Pro sera activée par le Super Admin.
+              </div>
+            )}
+
             {/* Submit */}
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-              Votre demande sera examinée par le Super Admin. Le restaurant restera inactif jusqu’à son approbation. Après validation, vous recevrez un lien de connexion par email.
+              Après la création, Supabase enverra un seul email de confirmation à votre adresse. Cliquez sur son lien pour confirmer votre compte, puis attendez l’approbation du Super Admin.
             </div>
 
             <div className="pt-4">

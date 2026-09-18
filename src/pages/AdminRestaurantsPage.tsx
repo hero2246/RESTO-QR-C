@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 import { Restaurant } from '../types';
 import { 
   Store, 
@@ -39,10 +40,12 @@ export const AdminRestaurantsPage: React.FC<AdminRestaurantsPageProps> = ({ navi
 
   const handleApproveRestaurant = async (restaurant: Restaurant) => {
     setApprovingRestaurantId(restaurant.id);
-    try {
-      const approvalResponse = await fetch('/api/approve-restaurant', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
+  try {
+  const { data: sessionData } = await supabase?.auth.getSession() ?? { data: { session: null } };
+  if (!sessionData.session?.access_token) throw new Error('Session Super Admin expirée. Reconnectez-vous.');
+  const approvalResponse = await fetch('/api/approve-restaurant', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${sessionData.session.access_token}` },
         body: JSON.stringify({ restaurantId: restaurant.id }),
       });
       const approvalResult = await approvalResponse.json().catch(() => null) as { error?: string; emailSent?: boolean; emailError?: string; restaurant?: { status?: string } } | null;

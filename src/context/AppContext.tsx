@@ -2064,7 +2064,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       showToast('Supabase n’est pas configuré. Inscription impossible.', 'error');
       throw new Error('Supabase is not configured');
     }
-    const { error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email.trim().toLowerCase(),
       password: data.password,
       options: {
@@ -2076,8 +2076,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         },
       },
     });
+    if (!authError && authData.user && authData.user.identities?.length === 0) {
+      const duplicateError = new Error('Cette adresse email possède déjà un compte. Utilisez la connexion ou une autre adresse email.');
+      showToast(duplicateError.message, 'error');
+      throw duplicateError;
+    }
     if (authError) {
-      showToast(`Compte propriétaire non créé : ${authError.message}`, 'error');
+      const normalizedAuthMessage = authError.message.toLowerCase().includes('rate limit')
+        ? 'Trop de demandes de confirmation. Attendez quelques minutes avant de réessayer, puis utilisez une nouvelle adresse email si nécessaire.'
+        : authError.message.toLowerCase().includes('already registered')
+          ? 'Cette adresse email possède déjà un compte. Utilisez la connexion ou une autre adresse email.'
+          : `Compte propriétaire non créé : ${authError.message}`;
+      showToast(normalizedAuthMessage, 'error');
       throw authError;
     }
 
@@ -2089,6 +2099,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCategories(prev => [...prev, ...defaultCategories]);
     setProducts(prev => [...prev, ...defaultProducts]);
     setTables(prev => [...prev, ...defaultTables]);
+
+    // Supabase sends the confirmation email from signUp when email confirmation is enabled.
+    // Do not create a local session until the owner has confirmed the address.
+    if (!authData.session) {
+      showToast('Compte créé. Vérifiez votre boîte mail et confirmez votre adresse avant de vous connecter.', 'success');
+      addAuditLog('INSCRIPTION_RESTAURANT', 'RESTAURANT', newResto.name, 'Restaurant créé, confirmation email requise');
+      return newResto;
+    }
 
     // Create and switch to new Restaurant Owner account
     const ownerProfile: Profile = {
@@ -2166,7 +2184,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     setRestaurants(prev => prev.map(r => r.id === id ? { ...r, plan_id: planId } : r));
     addAuditLog('MODIFICATION_PLAN_RESTAURANT', 'RESTAURANT', id, `Nouveau plan attribué : ${planId}`);
-    showToast(`Plan restaurant mis à jour : ${planId}`, 'success');
+    showToast(`Plan restaurant mis �� jour : ${planId}`, 'success');
   }, [currentUser, addAuditLog, showToast]);
 
   const deleteRestaurant = useCallback((id: string) => {

@@ -5,6 +5,7 @@ interface ApprovalBody {
 }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const serviceRoleKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
@@ -14,8 +15,23 @@ const senderEmail = process.env.BREVO_SENDER_EMAIL || 'dalphayaya249@gmail.com';
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl || !serviceRoleKey || !publishableKey) {
     return Response.json({ error: 'Supabase server configuration is missing.' }, { status: 503 });
+  }
+
+  const authorization = request.headers.get('authorization');
+  if (!authorization?.startsWith('Bearer ')) {
+    return Response.json({ error: 'Authentication required.' }, { status: 401 });
+  }
+  const accessToken = authorization.slice('Bearer '.length);
+  const authClient = createClient(supabaseUrl, publishableKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { data: userData, error: userError } = await authClient.auth.getUser(accessToken);
+  if (userError || !userData.user) return Response.json({ error: 'Invalid session.' }, { status: 401 });
+
+  const adminClient = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { data: profile, error: profileError } = await adminClient.from('profiles').select('role, is_active').eq('id', userData.user.id).single();
+  if (profileError || !profile?.is_active || !['OWNER', 'SAAS_EMPLOYEE'].includes(profile.role)) {
+    return Response.json({ error: 'Super Admin permission required.' }, { status: 403 });
   }
 
   let body: ApprovalBody;
@@ -26,8 +42,7 @@ export default async function handler(request: Request): Promise<Response> {
   }
   if (!body.restaurantId) return Response.json({ error: 'Missing restaurantId.' }, { status: 400 });
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
-  const { data, error } = await supabase
+  const { data, error } = await adminClient
     .from('restaurants')
     .update({ status: 'ACTIVE' })
     .eq('id', body.restaurantId)
