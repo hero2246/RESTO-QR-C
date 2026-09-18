@@ -92,13 +92,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ navigate }) => {
       return;
     }
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password: cleanPassword,
-    });
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: cleanPassword,
+      });
 
-    if (authError) {
-      setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.');
+      if (authError) {
+        setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.');
+        return;
+      }
+    } catch {
+      setError('Service de connexion temporairement indisponible. Réessayez dans un instant.');
       return;
     }
     const isOwnerEmail = cleanEmail === 'dalpahayaya249@gmail.com' || 
