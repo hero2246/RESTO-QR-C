@@ -405,20 +405,20 @@ const INITIAL_RESERVATIONS: RestaurantReservation[] = [
 ];
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // No authenticated user is assumed on a fresh browser.
+  // Authentication state is kept in the current browser session; business data remains Supabase-only.
   const [currentUser, setCurrentUser] = useState<Profile | null>(() => {
     try {
-      const saved = localPersistenceDisabled.getItem(STORAGE_KEYS.USER) || localPersistenceDisabled.getItem('restoqr_user_v3');
+      const saved = sessionStorage.getItem(STORAGE_KEYS.USER);
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
 
-  // Dedicated Owner Session flag (requires secret PIN/Password at /owner)
+  // Dedicated Owner Session flag survives a refresh without persisting business data locally.
   const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState<boolean>(() => {
     try {
-      return (localPersistenceDisabled.getItem(STORAGE_KEYS.OWNER_AUTH) || localPersistenceDisabled.getItem('restoqr_owner_auth_v3')) === 'true';
+      return sessionStorage.getItem(STORAGE_KEYS.OWNER_AUTH) === 'true';
     } catch {
       return false;
     }
@@ -702,19 +702,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!supabase) return;
     let cancelled = false;
-    void supabase.from('restaurants').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+    const loadRestaurants = async () => {
+      const { data, error } = await supabase.from('restaurants').select('*').order('created_at', { ascending: false });
       if (cancelled) return;
       if (error) {
-        showToast('Impossible de charger les restaurants depuis Supabase.', 'error');
+        showToast(`Impossible de charger les restaurants : ${error.message}`, 'error');
         return;
       }
-      if (!data) return;
-      setRestaurants(current => {
-        const remoteById = new Map((data as Restaurant[]).map(restaurant => [restaurant.id, restaurant]));
-        return data as Restaurant[];
-      });
-    });
-    return () => { cancelled = true; };
+      if (data) setRestaurants(data as Restaurant[]);
+    };
+    void loadRestaurants();
+    const channel = supabase
+      .channel('admin-restaurant-registrations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurants' }, payload => {
+        if (cancelled) return;
+        if (payload.eventType === 'INSERT') {
+          const restaurant = payload.new as Restaurant;
+          setRestaurants(current => current.some(item => item.id === restaurant.id) ? current : [restaurant, ...current]);
+          showToast(`Nouvelle inscription en attente : ${restaurant.name}`, 'info');
+        } else if (payload.eventType === 'UPDATE') {
+          const restaurant = payload.new as Restaurant;
+          setRestaurants(current => current.map(item => item.id === restaurant.id ? restaurant : item));
+        } else if (payload.eventType === 'DELETE') {
+          const restaurant = payload.old as Restaurant;
+          setRestaurants(current => current.filter(item => item.id !== restaurant.id));
+        }
+      })
+      .subscribe();
+    const interval = window.setInterval(() => void loadRestaurants(), 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      void supabase.removeChannel(channel);
+    };
   }, [showToast]);
 
   // Supabase is the only persistence layer. Local browser storage is intentionally unused.
@@ -854,8 +874,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       cleanPin === '789456' || 
       cleanPin === '249012';
 
-    if (emailMatches && passwordMatches && pinMatches) {
-      setIsOwnerAuthenticated(true);
+  if (emailMatches && passwordMatches && pinMatches) {
+    sessionStorage.setItem(STORAGE_KEYS.OWNER_AUTH, 'true');
+    sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({
+      id: 'usr-owner-root',
+      email: cleanEmail || validEmail || 'dalpahayaya249@gmail.com',
+      name: 'Alpha Yaya Diallo (Super Admin & Propriétaire Fondateur)',
+      role: 'OWNER',
+      is_active: true,
+    }));
+    setIsOwnerAuthenticated(true);
       const ownerProfile: Profile = {
         id: 'usr-owner-root',
         email: cleanEmail || validEmail || 'dalpahayaya249@gmail.com',
@@ -942,6 +970,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [addAuditLog, showToast]);
 
   const lockOwnerSession = useCallback(() => {
+    sessionStorage.removeItem(STORAGE_KEYS.OWNER_AUTH);
+    sessionStorage.removeItem(STORAGE_KEYS.USER);
     setIsOwnerAuthenticated(false);
     if (currentUser?.role === 'OWNER') {
       // Revert to default demo restaurant manager
@@ -1090,6 +1120,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setNotifications(prev => [checkoutNotif, ...prev]);
       }
     }
+    sessionStorage.removeItem(STORAGE_KEYS.USER);
+    sessionStorage.removeItem(STORAGE_KEYS.OWNER_AUTH);
     setCurrentUser(null);
     setIsOwnerAuthenticated(false);
     showToast('Déconnecté de la session', 'info');
@@ -1954,7 +1986,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser, addAuditLog]);
 
   // Restaurant Tenants Management
-  const registerRestaurant = useCallback((data: {
+  const registerRestaurant = useCallback(async (data: {
     name: string;
     owner_name: string;
     email: string;
@@ -1964,7 +1996,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     city: string;
     country: string;
     plan_id?: 'FREE' | 'PRO' | 'PREMIUM';
-  }): Restaurant => {
+  }): Promise<Restaurant> => {
     const slug = data.name
       .toLowerCase()
       .normalize('NFD')
@@ -2028,10 +2060,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Add to collections
     setRestaurants(prev => [newResto, ...prev]);
-    if (supabase) {
-      void supabase.from('restaurants').upsert(newResto).then(({ error }) => {
-        if (error) showToast('Inscription locale enregistrée, mais synchronisation Supabase impossible.', 'error');
-      });
+    if (!supabase) {
+      showToast('Supabase n’est pas configuré. Inscription impossible.', 'error');
+      throw new Error('Supabase is not configured');
+    }
+    const { error: restaurantError } = await supabase.from('restaurants').upsert(newResto, { onConflict: 'id' });
+    if (restaurantError) {
+      showToast(`Inscription non enregistrée : ${restaurantError.message}`, 'error');
+      throw restaurantError;
     }
     setCategories(prev => [...prev, ...defaultCategories]);
     setProducts(prev => [...prev, ...defaultProducts]);

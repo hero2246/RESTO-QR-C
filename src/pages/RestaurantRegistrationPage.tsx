@@ -20,14 +20,13 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
   const [selectedPlan, setSelectedPlan] = useState<'FREE' | 'PRO'>('PRO');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!restaurantName || !ownerName || !email || !phone) return;
 
     setIsSubmitting(true);
-
-    setTimeout(() => {
-      registerRestaurant({
+    try {
+      await registerRestaurant({
         name: restaurantName,
         owner_name: ownerName,
         email,
@@ -38,10 +37,12 @@ export const RestaurantRegistrationPage: React.FC<RestaurantRegistrationPageProp
         country,
         plan_id: selectedPlan,
       });
-
-      setIsSubmitting(false);
       navigate('/login?pending=1');
-    }, 400);
+    } catch {
+      // The context displays the Supabase error and keeps the form available for retry.
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
